@@ -76,36 +76,6 @@
     });
   });
 
-  /* Nudge download bas-droite : visible après le hero, masqué près des CTA download */
-  const dlNudge = document.getElementById("dlNudge");
-  if (dlNudge) {
-    const hideNear = [
-      document.querySelector(".hero .cta"),
-      document.getElementById("download"),
-    ].filter(Boolean);
-    const playerOverlay = document.getElementById("playerOverlay");
-
-    function syncDlNudge() {
-      const pastHero = window.scrollY > window.innerHeight * 0.55;
-      const nearCta = hideNear.some((el) => {
-        const r = el.getBoundingClientRect();
-        return r.top < window.innerHeight - 48 && r.bottom > 48;
-      });
-      const playerOpen = playerOverlay?.classList.contains("is-on");
-      dlNudge.classList.toggle("is-on", pastHero && !nearCta && !playerOpen);
-    }
-
-    window.addEventListener("scroll", syncDlNudge, { passive: true });
-    window.addEventListener("resize", syncDlNudge, { passive: true });
-    if (playerOverlay) {
-      new MutationObserver(syncDlNudge).observe(playerOverlay, {
-        attributes: true,
-        attributeFilter: ["class"],
-      });
-    }
-    syncDlNudge();
-  }
-
   document.querySelectorAll(".reveal").forEach((el) => {
     el.classList.add("is-in");
   });
@@ -697,6 +667,12 @@
       rootEl.querySelectorAll(".sim-panel").forEach((p) => {
         p.classList.toggle("is-on", p.dataset.step === next);
       });
+      const nudge = document.getElementById("dlNudge");
+      if (nudge) {
+        const on = next === "plan";
+        nudge.hidden = !on;
+        nudge.classList.toggle("is-on", on);
+      }
     }
 
     function folderStats() {
