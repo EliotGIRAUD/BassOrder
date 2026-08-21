@@ -1,0 +1,83 @@
+# Build BassOrder for Windows + macOS and attach to a GitHub Release.
+# Trigger: push tag v*  OR  Actions → Run workflow
+#
+# Unsigned macOS builds: Gatekeeper will warn — OK for beta.
+# Apple signing/notarization can be added later via secrets.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish-tauri:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            args: ""
+          - platform: macos-latest
+            args: --target aarch64-apple-darwin
+            rust_targets: aarch64-apple-darwin
+          - platform: macos-latest
+            args: --target x86_64-apple-darwin
+            rust_targets: x86_64-apple-darwin
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_targets || '' }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VITE_BASSORDER_API: https://api.bassorder.smegg.cloud
+        with:
+          projectPath: .
+          tagName: v__VERSION__
+          releaseName: BassOrder v__VERSION__
+          releaseBody: |
+            Installateurs BassOrder.
+
+            - **Windows** : `.msi` ou `.exe`
+            - **macOS** : `.dmg` (Apple Silicon + Intel) — non signé pour l’instant (Gatekeeper peut avertir)
+
+            Landing : https://bassorder.smegg.cloud
+            API : https://api.bassorder.smegg.cloud/health
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}

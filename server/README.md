@@ -54,6 +54,9 @@ Ou depuis la racine : `pnpm api`
 - `BASSORDER_CORS_ORIGINS` (origines séparées par des virgules ; **obligatoire** si bind hors localhost)
 
 Rate-limit : 20 tentatives / 15 min par IP (+ email) sur register / login / refresh.
+IP client : `X-Real-IP` uniquement si le peer est loopback (Nginx local).
+
+Durcissement VPS : [`deploy/harden-vps.sh`](../deploy/harden-vps.sh) (UFW, fail2ban, headers nginx, backup SQLite, Docker non-root).
 
 Docker Compose VPS : voir [`deploy/`](../deploy/) (`docker-compose.yml`, Nginx, Certbot, `bootstrap.sh`).
 Prod publique : `https://api.bassorder.smegg.cloud`.

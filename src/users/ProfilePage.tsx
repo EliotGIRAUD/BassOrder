@@ -15,7 +15,7 @@ type Props = {
 };
 
 export function ProfilePage({ onLeave }: Props) {
-  const { user, users, rename, recolor, setAvatar, remove, leave } = useUserSession();
+  const { user, rename, recolor, setAvatar, remove, leave } = useUserSession();
   const fx = useExperience();
   const paintSkel = usePaintSkeleton(200);
   const [draft, setDraft] = useState(user?.name ?? "");
@@ -30,9 +30,8 @@ export function ProfilePage({ onLeave }: Props) {
       libraries: listLibraries().length,
       imports: listImports().length,
       spotifyProfiles: listProfiles().length,
-      siblings: Math.max(0, users.length - 1),
     };
-  }, [users]);
+  }, [user?.id, user?.avatarUrl]);
 
   const spotifyAvatars = useMemo(() => {
     const seen = new Set<string>();
@@ -49,7 +48,7 @@ export function ProfilePage({ onLeave }: Props) {
       });
     }
     return out;
-  }, [users, user?.avatarUrl]);
+  }, [user?.id, user?.avatarUrl]);
 
   if (!user) {
     return null;
@@ -95,7 +94,7 @@ export function ProfilePage({ onLeave }: Props) {
     });
   }
 
-  function onSwitchUser() {
+  function onLock() {
     leave();
     onLeave();
   }
@@ -108,8 +107,8 @@ export function ProfilePage({ onLeave }: Props) {
     remove(user!.id);
     fx.toast({
       kind: "warn",
-      title: "Profil retiré",
-      body: "Ses données locales scopées ont été effacées.",
+      title: "Espace effacé",
+      body: "Tu pourras recréer un pseudo au prochain lancement.",
     });
     onLeave();
   }
@@ -265,12 +264,8 @@ export function ProfilePage({ onLeave }: Props) {
               <dd>{stats.imports}</dd>
             </div>
             <div>
-              <dt>Profils Spotify</dt>
+              <dt>Comptes Spotify</dt>
               <dd>{stats.spotifyProfiles}</dd>
-            </div>
-            <div>
-              <dt>Autres utilisateurs</dt>
-              <dd>{stats.siblings}</dd>
             </div>
           </dl>
         </div>
@@ -289,15 +284,15 @@ export function ProfilePage({ onLeave }: Props) {
       </div>
 
       <footer className="profile-actions">
-        <button type="button" className="btn-ghost" onClick={onSwitchUser}>
-          Changer d’utilisateur
+        <button type="button" className="btn-ghost" onClick={onLock}>
+          Verrouiller
         </button>
         <button
           type="button"
           className={`btn-ghost profile-danger${confirmWipe ? " is-confirm" : ""}`}
           onClick={onDelete}
         >
-          {confirmWipe ? "Confirmer la suppression" : "Supprimer ce profil"}
+          {confirmWipe ? "Confirmer la suppression" : "Réinitialiser l’espace"}
         </button>
         {confirmWipe && (
           <button

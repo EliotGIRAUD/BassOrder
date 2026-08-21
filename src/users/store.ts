@@ -161,6 +161,29 @@ export async function hydrateUsersFromDb(force = false): Promise<void> {
       if (!force || memSession === undefined) {
         memSession = session;
       }
+      // Single-user : fusionne les anciens multi-profils.
+      const sorted = [...memUsers].sort((a, b) => b.lastUsedAt - a.lastUsedAt);
+      if (sorted.length > 1) {
+        const keeper = sorted[0];
+        for (const extra of sorted.slice(1)) {
+          wipeUserStorage(extra.id);
+          try {
+            await dbDeleteUser(extra.id);
+          } catch {
+            /* ignore */
+          }
+        }
+        memUsers = [keeper];
+        writeStoreLocal({ users: memUsers });
+        if (memSession && memSession !== keeper.id) {
+          memSession = keeper.id;
+          try {
+            await dbSetSession(keeper.id);
+          } catch {
+            /* ignore */
+          }
+        }
+      }
     } catch {
       memUsers = memUsers ?? [];
     } finally {
@@ -179,6 +202,28 @@ export function isUsersHydrated(): boolean {
 
 export function listUsers(): AppUser[] {
   return [...ensureMem()].sort((a, b) => b.lastUsedAt - a.lastUsedAt);
+}
+
+/** Un seul utilisateur par install — garde le plus récemment utilisé. */
+export async function ensureSoleUser(): Promise<AppUser | null> {
+  const users = listUsers();
+  if (users.length === 0) {
+    return null;
+  }
+  if (users.length === 1) {
+    return users[0];
+  }
+  const keeper = users[0];
+  for (const extra of users.slice(1)) {
+    await deleteUser(extra.id);
+  }
+  return listUsers().find((u) => u.id === keeper.id) ?? keeper;
+}
+
+/** L’unique utilisateur de cette install, ou null. */
+export function getSoleUser(): AppUser | null {
+  const users = listUsers();
+  return users[0] ?? null;
 }
 
 export function getSessionUserId(): string | null {
@@ -263,13 +308,21 @@ export async function createUser(name: string, color?: string): Promise<AppUser>
   if (isTauri() && !hydrated) {
     await hydrateUsersFromDb();
   }
+  await ensureSoleUser();
+  const existing = getSoleUser();
+  if (existing) {
+    let next = existing;
+    const trimmed = name.trim();
+    if (trimmed && trimmed !== existing.name) {
+      next = (await renameUser(existing.id, trimmed)) ?? next;
+    }
+    if (color && color !== next.color) {
+      next = (await recolorUser(existing.id, color)) ?? next;
+    }
+    return next;
+  }
   const trimmed = name.trim() || "Moi";
-  const users = ensureMem();
-  const usedColors = new Set(users.map((u) => u.color));
-  const autoColor =
-    color ??
-    USER_COLORS.find((c) => !usedColors.has(c)) ??
-    USER_COLORS[users.length % USER_COLORS.length];
+  const autoColor = color ?? USER_COLORS[0];
 
   const user = normalize({
     id: uid(),
@@ -280,10 +333,7 @@ export async function createUser(name: string, color?: string): Promise<AppUser>
   });
 
   await persistUser(user);
-
-  if (users.length === 0) {
-    migrateLegacyIntoUser(user.id);
-  }
+  migrateLegacyIntoUser(user.id);
 
   return user;
 }

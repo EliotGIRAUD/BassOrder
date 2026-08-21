@@ -26,6 +26,7 @@ import {
   createUser,
   deleteUser,
   enterAsUser,
+  ensureSoleUser,
   getSessionUser,
   hydrateUserSession,
   hydrateUsersFromDb,
@@ -89,8 +90,9 @@ export function UserSessionProvider({ children }: { children: ReactNode }) {
     void (async () => {
       await hydrateUserData();
       if (!cancelled) {
+        await ensureSoleUser();
         setUsers(listUsers());
-        setLastUserId(getSessionUser()?.id ?? null);
+        setLastUserId(getSessionUser()?.id ?? listUsers()[0]?.id ?? null);
         setReady(true);
       }
     })();

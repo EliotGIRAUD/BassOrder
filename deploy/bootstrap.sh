@@ -78,7 +78,10 @@ else
   echo "  certbot --nginx -d bassorder.smegg.cloud -d api.bassorder.smegg.cloud"
 fi
 
+echo "==> Harden (firewall, fail2ban, headers nginx, backups)"
+bash "$APP_ROOT/deploy/harden-vps.sh"
+
 echo "==> DONE"
-echo "Landing: http://bassorder.smegg.cloud (après DNS)"
-echo "API:     http://api.bassorder.smegg.cloud/health"
+echo "Landing: https://bassorder.smegg.cloud"
+echo "API:     https://api.bassorder.smegg.cloud/health"
 echo "Upload MSI ensuite dans $WWW_ROOT/downloads/"

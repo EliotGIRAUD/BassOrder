@@ -86,8 +86,13 @@ fn normalize_email(email: &str) -> ApiResult<String> {
     Ok(e)
 }
 
-fn enforce_auth_limit(state: &AppState, addr: Option<SocketAddr>, email_hint: &str) -> ApiResult<()> {
-    let key = client_key(addr, email_hint);
+fn enforce_auth_limit(
+    state: &AppState,
+    addr: Option<SocketAddr>,
+    headers: &HeaderMap,
+    email_hint: &str,
+) -> ApiResult<()> {
+    let key = client_key(addr, headers, email_hint);
     if state.auth_limiter.check(&key) {
         Ok(())
     } else {
@@ -201,10 +206,11 @@ pub fn require_account(
 pub async fn register(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     Json(body): Json<Credentials>,
 ) -> ApiResult<Json<AuthTokens>> {
     let email = normalize_email(&body.email)?;
-    enforce_auth_limit(&state, Some(addr), &email)?;
+    enforce_auth_limit(&state, Some(addr), &headers, &email)?;
     let hash = hash_password(&body.password)?;
     let id = Uuid::new_v4().to_string();
     state.db.create_account(&id, &email, Some(&hash))?;
@@ -214,10 +220,11 @@ pub async fn register(
 pub async fn login(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     Json(body): Json<Credentials>,
 ) -> ApiResult<Json<AuthTokens>> {
     let email = normalize_email(&body.email)?;
-    enforce_auth_limit(&state, Some(addr), &email)?;
+    enforce_auth_limit(&state, Some(addr), &headers, &email)?;
     let account = state
         .db
         .find_by_email(&email)?
@@ -239,6 +246,7 @@ pub async fn login(
 pub async fn refresh(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     Json(body): Json<RefreshBody>,
 ) -> ApiResult<Json<AuthTokens>> {
     let hint = {
@@ -246,7 +254,7 @@ pub async fn refresh(
         hasher.update(body.refresh_token.as_bytes());
         hex::encode(hasher.finalize())[..16].to_string()
     };
-    enforce_auth_limit(&state, Some(addr), &hint)?;
+    enforce_auth_limit(&state, Some(addr), &headers, &hint)?;
     let hashed = hash_token(&body.refresh_token);
     let row = state
         .db
@@ -288,32 +296,33 @@ pub async fn me(State(state): State<AppState>, headers: HeaderMap) -> ApiResult<
     }))
 }
 
+fn oauth_configured(provider: &str) -> bool {
+    let (id_key, secret_key) = match provider {
+        "google" => ("BASSORDER_GOOGLE_CLIENT_ID", "BASSORDER_GOOGLE_CLIENT_SECRET"),
+        "discord" => (
+            "BASSORDER_DISCORD_CLIENT_ID",
+            "BASSORDER_DISCORD_CLIENT_SECRET",
+        ),
+        _ => return false,
+    };
+    let id = std::env::var(id_key).unwrap_or_default();
+    let secret = std::env::var(secret_key).unwrap_or_default();
+    !id.trim().is_empty() && !secret.trim().is_empty()
+}
+
 pub async fn oauth_start(
-    State(state): State<AppState>,
+    State(_state): State<AppState>,
     Path(provider): Path<String>,
 ) -> impl IntoResponse {
     let p = provider.to_ascii_lowercase();
     if p != "google" && p != "discord" {
-        return ApiError::BadRequest("Provider inconnu.".into()).into_response();
+        return ApiError::NotFound("OAuth indisponible.".into()).into_response();
     }
-    // Provider déjà restreint à un allowlist — pas d’interpolation HTML libre.
-    let label = if p == "google" { "Google" } else { "Discord" };
-    let env_key = if p == "google" { "GOOGLE" } else { "DISCORD" };
-    let base = html_escape(&state.public_base);
-    let html = format!(
-        "<!doctype html><meta charset=utf-8><title>OAuth {label}</title>\
-         <body style='font-family:system-ui;background:#0a0c0e;color:#e8ecef;padding:2rem'>\
-         <h1>OAuth {label}</h1>\
-         <p>Configure <code>BASSORDER_{env_key}_CLIENT_ID</code> / <code>SECRET</code> sur le serveur.\
-         Callback : <code>{base}/auth/oauth/{p}/callback</code></p>\
-         <p><a href='{base}' style='color:#5ec4b0'>Retour API</a></p></body>",
-    );
-    (
-        axum::http::StatusCode::OK,
-        [("content-type", "text/html; charset=utf-8")],
-        html,
-    )
-        .into_response()
+    if !oauth_configured(&p) {
+        return ApiError::NotFound("OAuth non configuré.".into()).into_response();
+    }
+    // Branchement réel (redirect provider) à implémenter quand les secrets sont posés.
+    ApiError::BadRequest("OAuth provider non encore branché.".into()).into_response()
 }
 
 pub async fn oauth_callback(
@@ -321,16 +330,8 @@ pub async fn oauth_callback(
     Path(provider): Path<String>,
 ) -> impl IntoResponse {
     let p = provider.to_ascii_lowercase();
-    if p != "google" && p != "discord" {
-        return ApiError::BadRequest("Provider inconnu.".into()).into_response();
+    if (p != "google" && p != "discord") || !oauth_configured(&p) {
+        return ApiError::NotFound("OAuth indisponible.".into()).into_response();
     }
     Redirect::temporary(&format!("/auth/oauth/{p}/start")).into_response()
-}
-
-fn html_escape(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
-        .replace('\'', "&#39;")
 }

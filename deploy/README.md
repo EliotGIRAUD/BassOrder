@@ -28,7 +28,16 @@ Puis uploader l’installateur Windows vers `/var/www/bassorder/downloads/`.
 
 ## Fichiers
 
-- `docker-compose.yml` — API Rust + volume SQLite
-- `nginx/*.conf` — vhosts HTTP (Certbot ajoute TLS)
+- `docker-compose.yml` — API Rust + volume SQLite (non-root, caps drop)
+- `nginx/*.conf` — vhosts (+ snippets headers / rate-limit)
+- `harden-vps.sh` — firewall, fail2ban, SSH, nginx sécu, backups
+- `backup-sqlite.sh` — dump quotidien volume SQLite
 - `landing/` — page de téléchargement
 - `.env.example` — modèle secret JWT
+
+Après un déploiement existant :
+
+```bash
+cd /opt/bassorder && git pull
+bash deploy/harden-vps.sh
+```
