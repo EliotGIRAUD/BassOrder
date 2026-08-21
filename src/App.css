@@ -6665,11 +6665,12 @@ button.artist-chip {
   width: min(400px, calc(100vw - var(--rail-width)));
   overflow-x: hidden;
   overflow-y: auto;
-  padding: 1.2rem 1.15rem 1.4rem;
+  padding: 1.2rem 1.15rem 2rem;
   border-right: 1px solid var(--border);
   background: rgba(4, 5, 7, 0.96);
   box-shadow: 24px 0 60px rgba(0, 0, 0, 0.45);
   animation: drawer-in 0.4s var(--ease-spring) both;
+  box-sizing: border-box;
 }
 
 .settings-top {
@@ -6937,8 +6938,12 @@ button.artist-chip {
   font-size: 0.88rem;
 }
 
+.settings-select {
+  position: relative;
+}
+
 .settings-slider span,
-.settings-select span {
+.settings-select > span {
   display: flex;
   justify-content: space-between;
   gap: 0.6rem;
@@ -6950,25 +6955,136 @@ button.artist-chip {
   font-variant-numeric: tabular-nums;
 }
 
-.settings-slider input,
-.settings-select select {
+.settings-slider input {
   width: 100%;
   accent-color: var(--accent);
 }
 
-.settings-select select {
+.settings-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  width: 100%;
   appearance: none;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.35);
+  background:
+    linear-gradient(180deg, rgba(125, 255, 212, 0.06), transparent 70%),
+    rgba(0, 0, 0, 0.45);
   color: var(--text);
-  padding: 0.45rem 0.7rem;
+  padding: 0.55rem 0.75rem;
+  font: inherit;
+  text-align: left;
+  cursor: none;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.settings-select-trigger:hover,
+.settings-select-trigger.is-open {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  background:
+    linear-gradient(180deg, rgba(125, 255, 212, 0.1), transparent 70%),
+    rgba(0, 0, 0, 0.55);
+}
+
+.settings-select-trigger i {
+  flex-shrink: 0;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 1.5px solid var(--accent);
+  border-bottom: 1.5px solid var(--accent);
+  transform: rotate(45deg) translateY(-1px);
+  opacity: 0.85;
+  transition: transform 0.2s ease;
+}
+
+.settings-select-trigger.is-open i {
+  transform: rotate(225deg) translateY(-1px);
+}
+
+.settings-select-menu {
+  position: absolute;
+  z-index: 5;
+  left: 0.15rem;
+  right: 0.15rem;
+  top: calc(100% + 0.35rem);
+  margin: 0;
+  padding: 0.35rem;
+  list-style: none;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border));
+  background: rgba(8, 10, 14, 0.98);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(125, 255, 212, 0.08);
+  animation: settings-menu-in 0.18s var(--ease-out, ease) both;
+}
+
+.settings-select-menu li {
+  margin: 0;
+}
+
+.settings-select-menu button {
+  display: block;
+  width: 100%;
+  appearance: none;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  padding: 0.55rem 0.7rem;
+  font: inherit;
+  text-align: left;
+  cursor: none;
+}
+
+.settings-select-menu button:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.settings-select-menu button.is-active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+@keyframes settings-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.settings-db {
+  min-width: 0;
+}
+
+.settings-db-hint {
+  margin: 0 0 0.75rem;
+  opacity: 0.7;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.settings-db .btn-accent {
+  width: 100%;
+  justify-content: center;
 }
 
 .settings-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.55rem;
   justify-content: flex-end;
+  padding-bottom: 0.35rem;
 }
 
 html[data-fx-cursor="off"] .app-frame,

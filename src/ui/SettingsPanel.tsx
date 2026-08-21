@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { AppLocale } from "../i18n";
 import { dbGetPath, dbRevealPath, isTauri } from "../db";
 import { playNotify, unlockAudio } from "./sounds";
 import {
@@ -95,18 +94,15 @@ function SettingsSheetBody({
         <p style={{ opacity: 0.7, fontSize: "0.85rem", marginBottom: "0.75rem" }}>
           {t("languageHint")}
         </p>
-        <label className="settings-select">
-          <span>{t("language")}</span>
-          <select
-            value={prefs.locale}
-            onChange={(e) =>
-              patch({ locale: e.target.value as AppLocale })
-            }
-          >
-            <option value="en">{t("langEn")}</option>
-            <option value="fr">{t("langFr")}</option>
-          </select>
-        </label>
+        <SettingsSelect
+          label={t("language")}
+          value={prefs.locale}
+          options={[
+            { value: "en", label: t("langEn") },
+            { value: "fr", label: t("langFr") },
+          ]}
+          onChange={(locale) => patch({ locale })}
+        />
       </section>
 
       <section
@@ -277,17 +273,18 @@ function SettingsSheetBody({
             onChange={(e) => patch({ volume: Number(e.target.value) })}
           />
         </label>
-        <label className="settings-select">
-          <span>{t("toastDuration")}</span>
-          <select
-            value={prefs.toastMs}
-            onChange={(e) => patch({ toastMs: Number(e.target.value) as Prefs["toastMs"] })}
-          >
-            <option value={5000}>{t("toastShort")}</option>
-            <option value={12000}>{t("toastNormal")}</option>
-            <option value={20000}>{t("toastLong")}</option>
-          </select>
-        </label>
+        <SettingsSelect
+          label={t("toastDuration")}
+          value={String(prefs.toastMs)}
+          options={[
+            { value: "5000", label: t("toastShort") },
+            { value: "12000", label: t("toastNormal") },
+            { value: "20000", label: t("toastLong") },
+          ]}
+          onChange={(v) =>
+            patch({ toastMs: Number(v) as Prefs["toastMs"] })
+          }
+        />
         <button
           type="button"
           className="btn-accent"
@@ -300,8 +297,9 @@ function SettingsSheetBody({
         </button>
       </section>
 
+      <DbRevealButton />
+
       <footer className="settings-actions">
-        <DbRevealButton />
         <button
           type="button"
           className="btn-ghost"
@@ -317,6 +315,90 @@ function SettingsSheetBody({
   );
 }
 
+function SettingsSelect<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (value: T) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const listId = useId();
+  const selected = options.find((o) => o.value === value) ?? options[0];
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointer(e: MouseEvent) {
+      if (!rootRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setOpen(false);
+      }
+    }
+    window.addEventListener("mousedown", onPointer);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", onPointer);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div className="settings-select" ref={rootRef}>
+      <span id={`${listId}-label`}>{label}</span>
+      <button
+        type="button"
+        className={`settings-select-trigger${open ? " is-open" : ""}`}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={listId}
+        aria-labelledby={`${listId}-label`}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span>{selected?.label}</span>
+        <i aria-hidden />
+      </button>
+      {open && (
+        <ul
+          id={listId}
+          className="settings-select-menu"
+          role="listbox"
+          aria-labelledby={`${listId}-label`}
+        >
+          {options.map((opt) => {
+            const active = opt.value === value;
+            return (
+              <li key={opt.value} role="presentation">
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={active}
+                  className={active ? "is-active" : undefined}
+                  onClick={() => {
+                    onChange(opt.value);
+                    setOpen(false);
+                  }}
+                >
+                  {opt.label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function DbRevealButton() {
   const { t } = useTranslation("settings");
   const [path, setPath] = useState<string | null>(null);
@@ -326,9 +408,9 @@ function DbRevealButton() {
   }, []);
   if (!isTauri()) return null;
   return (
-    <section className="settings-block" style={{ marginBottom: "1rem" }}>
+    <section className="settings-block settings-db">
       <h3>{t("localDb")}</h3>
-      <p style={{ opacity: 0.7, fontSize: "0.85rem", marginBottom: "0.75rem" }}>
+      <p className="settings-db-hint">
         {t("localDbHint", {
           path: path ? ` — ${path}` : "",
         })}
