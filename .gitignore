@@ -36,3 +36,6 @@ deploy/.env
 *.njsproj
 *.sln
 *.sw?
+
+release/
+
