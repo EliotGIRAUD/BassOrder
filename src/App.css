@@ -299,8 +299,8 @@ input {
   display: grid;
   place-items: center;
   border-radius: 14px;
-  border: 1px solid rgba(125, 255, 212, 0.28);
-  background: #000;
+  border: 1px solid rgba(125, 255, 212, 0.22);
+  background: #0b1220;
   box-shadow: 0 0 24px rgba(125, 255, 212, 0.12);
 }
 
