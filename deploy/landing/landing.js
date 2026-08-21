@@ -76,6 +76,36 @@
     });
   });
 
+  /* Nudge download bas-droite : visible après le hero, masqué près des CTA download */
+  const dlNudge = document.getElementById("dlNudge");
+  if (dlNudge) {
+    const hideNear = [
+      document.querySelector(".hero .cta"),
+      document.getElementById("download"),
+    ].filter(Boolean);
+    const playerOverlay = document.getElementById("playerOverlay");
+
+    function syncDlNudge() {
+      const pastHero = window.scrollY > window.innerHeight * 0.55;
+      const nearCta = hideNear.some((el) => {
+        const r = el.getBoundingClientRect();
+        return r.top < window.innerHeight - 48 && r.bottom > 48;
+      });
+      const playerOpen = playerOverlay?.classList.contains("is-on");
+      dlNudge.classList.toggle("is-on", pastHero && !nearCta && !playerOpen);
+    }
+
+    window.addEventListener("scroll", syncDlNudge, { passive: true });
+    window.addEventListener("resize", syncDlNudge, { passive: true });
+    if (playerOverlay) {
+      new MutationObserver(syncDlNudge).observe(playerOverlay, {
+        attributes: true,
+        attributeFilter: ["class"],
+      });
+    }
+    syncDlNudge();
+  }
+
   document.querySelectorAll(".reveal").forEach((el) => {
     el.classList.add("is-in");
   });
@@ -106,7 +136,7 @@
     return m + ":" + String(s).padStart(2, "0");
   }
 
-  /* —— Mini player hero (haut droite) —— */
+  /* -- Mini player hero (haut droite) -- */
   (async function bootHeroPlayer() {
     const root = document.getElementById("heroPlayer");
     if (!root) return;
@@ -134,7 +164,7 @@
         {
           title: "Wake Me Up",
           artist: "Avicii",
-          folder: "Électro",
+          folder: "\u00C9lectro",
           file: "06-wake-me-up.mp3",
         },
       ];
@@ -150,9 +180,9 @@
     audio.volume = 0.75;
 
     function showMeta(c) {
-      if (folderEl) folderEl.textContent = c.folder || c.genre || "—";
+      if (folderEl) folderEl.textContent = c.folder || c.genre || "-";
       if (titleEl) titleEl.textContent = c.title;
-      if (artistEl) artistEl.textContent = c.artist || "—";
+      if (artistEl) artistEl.textContent = c.artist || "-";
     }
 
     function load(i, autoplay) {
@@ -186,7 +216,7 @@
           if (playBtn) playBtn.textContent = "Pause";
         }).catch((err) => {
           console.warn("hero play", err);
-          if (artistEl) artistEl.textContent = "Erreur lecture — clique encore";
+          if (artistEl) artistEl.textContent = "Erreur lecture - clique encore";
         });
       } else {
         audio.pause();
@@ -231,7 +261,7 @@
     load(idx, false);
   })();
 
-  /* —— Preview Live —— */
+  /* -- Preview Live -- */
   const player = (() => {
     const overlay = document.getElementById("playerOverlay");
     if (!overlay) return null;
@@ -299,23 +329,23 @@
 
     function fillMeta(track) {
       const path = track.audio || ("clips/" + (track.file || ""));
-      if (els.folder) els.folder.textContent = track.folder || track.genre || "—";
-      if (els.title) els.title.textContent = track.title || track.file || "—";
+      if (els.folder) els.folder.textContent = track.folder || track.genre || "-";
+      if (els.title) els.title.textContent = track.title || track.file || "-";
       if (els.artist) els.artist.textContent = track.artist || "Unknown artist";
-      if (els.album) els.album.textContent = track.album || "—";
-      if (els.year) els.year.textContent = track.year || "—";
-      if (els.genre) els.genre.textContent = track.genre || track.folder || "—";
-      if (els.bpm) els.bpm.textContent = track.bpm != null ? String(track.bpm) : "—";
-      if (els.key) els.key.textContent = track.musicalKey || "—";
+      if (els.album) els.album.textContent = track.album || "-";
+      if (els.year) els.year.textContent = track.year || "-";
+      if (els.genre) els.genre.textContent = track.genre || track.folder || "-";
+      if (els.bpm) els.bpm.textContent = track.bpm != null ? String(track.bpm) : "-";
+      if (els.key) els.key.textContent = track.musicalKey || "-";
       if (els.bitrate) {
-        els.bitrate.textContent = track.bitrateKbps ? track.bitrateKbps + " kb/s" : "—";
+        els.bitrate.textContent = track.bitrateKbps ? track.bitrateKbps + " kb/s" : "-";
       }
       if (els.durMeta) {
         els.durMeta.textContent = track.durationSecs
           ? formatClock(track.durationSecs)
-          : track.dur || "—";
+          : track.dur || "-";
       }
-      if (els.file) els.file.textContent = track.file || path.split("/").pop() || "—";
+      if (els.file) els.file.textContent = track.file || path.split("/").pop() || "-";
       if (els.path) {
         els.path.textContent = path;
         els.path.title = path;
@@ -346,7 +376,7 @@
           if (els.error) {
             els.error.hidden = false;
             els.error.textContent =
-              "File not found — add the clip to /clips and check clips.json.";
+              "File not found - add the clip to /clips and check clips.json.";
           }
         });
       }
@@ -417,7 +447,7 @@
       if (els.error) {
         els.error.hidden = false;
         els.error.textContent =
-          "File not found — add the clip to /clips and check clips.json.";
+          "File not found - add the clip to /clips and check clips.json.";
       }
     });
 
@@ -474,26 +504,28 @@
     return { openPlayer, closePlayer };
   })();
 
-  /* —— Simulation scan local —— */
+  /* -- Simulation scan local -- */
   async function bootSim() {
-    /* Placeholders non écoutables — uniquement pour tester le tri / dossiers. */
+    /* Placeholders non écoutables — interaction tri / dossiers uniquement. */
     const DEMO_TRACKS = [
       { title: "Glass Jaw", artist: "Static Youth", folder: "Rock", dur: "3:42", file: "glass_jaw.mp3" },
       { title: "Static Youth", artist: "Static Youth", folder: "Rock", dur: "4:05", file: "static_youth.mp3" },
       { title: "Redline", artist: "Ash Circuit", folder: "Rock", dur: "3:18", file: "redline.flac" },
-      { title: "Fault Line", artist: "Ash Circuit", folder: "Rock", dur: "3:51", file: "fault_line.mp3" },
+      { title: "Fault Line", artist: "Ash Circuit", folder: "Indie", dur: "3:51", file: "fault_line.mp3" },
       { title: "Blue Room", artist: "Elm Quartet", folder: "Jazz", dur: "5:12", file: "blue_room.mp3" },
       { title: "Smoke Signal", artist: "River Brass", folder: "Jazz", dur: "4:44", file: "smoke_signal.mp3" },
       { title: "Late Set", artist: "Elm Quartet", folder: "Jazz", dur: "6:01", file: "late_set.flac" },
       { title: "Harbor Lights", artist: "River Brass", folder: "Jazz", dur: "4:02", file: "harbor_lights.mp3" },
       { title: "Concrete Prayer", artist: "K-Line", folder: "Hip-Hop", dur: "2:58", file: "concrete_prayer.mp3" },
       { title: "Night Court", artist: "K-Line", folder: "Hip-Hop", dur: "3:21", file: "night_court.mp3" },
-      { title: "Low Battery", artist: "Tape Run", folder: "Hip-Hop", dur: "2:47", file: "low_battery.m4a" },
+      { title: "Low Battery", artist: "Tape Run", folder: "Trap", dur: "2:47", file: "low_battery.m4a" },
       { title: "Sidewalk Cipher", artist: "Tape Run", folder: "Hip-Hop", dur: "3:09", file: "sidewalk_cipher.mp3" },
-      { title: "Midnight Drive", artist: "Neon Coast", folder: "Electro", dur: "4:10", file: "midnight_drive.mp3" },
-      { title: "After Hours", artist: "Soft Circuit", folder: "Electro", dur: "5:33", file: "after_hours.wav" },
-      { title: "Gridlock", artist: "Soft Circuit", folder: "Electro", dur: "3:55", file: "gridlock.mp3" },
-      { title: "Pulse Map", artist: "Neon Coast", folder: "Electro", dur: "4:28", file: "pulse_map.flac" },
+      { title: "Warehouse 04", artist: "Soft Circuit", folder: "Techno", dur: "5:33", file: "warehouse_04.wav" },
+      { title: "Gridlock", artist: "Soft Circuit", folder: "Techno", dur: "3:55", file: "gridlock.mp3" },
+      { title: "Filter Run", artist: "Neon Coast", folder: "House", dur: "4:10", file: "filter_run.mp3" },
+      { title: "Pulse Map", artist: "Neon Coast", folder: "House", dur: "4:28", file: "pulse_map.flac" },
+      { title: "Neuro Latch", artist: "Rail Split", folder: "Drum and Bass", dur: "4:02", file: "neuro_latch.mp3" },
+      { title: "Liquid Margin", artist: "Rail Split", folder: "Drum and Bass", dur: "5:18", file: "liquid_margin.flac" },
       { title: "Chrome Bloom", artist: "Velvet Relay", folder: "Pop", dur: "3:14", file: "chrome_bloom.mp3" },
       { title: "Paper Planets", artist: "Velvet Relay", folder: "Pop", dur: "2:56", file: "paper_planets.mp3" },
       { title: "Weekend Glow", artist: "Lumen Park", folder: "Pop", dur: "3:33", file: "weekend_glow.m4a" },
@@ -502,7 +534,7 @@
       { title: "Forge Hymn", artist: "Slag Engine", folder: "Metal", dur: "3:48", file: "forge_hymn.mp3" },
       { title: "Copper Softly", artist: "Amber Lane", folder: "Soul", dur: "3:27", file: "copper_softly.mp3" },
       { title: "Midnight Kitchen", artist: "Amber Lane", folder: "Soul", dur: "4:11", file: "midnight_kitchen.mp3" },
-      { title: "Slow Burn Honey", artist: "Riviera Keys", folder: "Soul", dur: "3:58", file: "slow_burn_honey.flac" },
+      { title: "Slow Burn Honey", artist: "Riviera Keys", folder: "R&B", dur: "3:58", file: "slow_burn_honey.flac" },
       { title: "Yard Signal", artist: "King Root", folder: "Reggae", dur: "3:36", file: "yard_signal.mp3" },
       { title: "Dub Morning", artist: "King Root", folder: "Reggae", dur: "4:22", file: "dub_morning.mp3" },
       { title: "Island Wire", artist: "Coral Pressure", folder: "Reggae", dur: "3:19", file: "island_wire.m4a" },
@@ -510,7 +542,7 @@
       { title: "Quiet March", artist: "North Chamber", folder: "Classical", dur: "5:40", file: "quiet_march.mp3" },
       { title: "Glass Nocturne", artist: "Ivory Atlas", folder: "Classical", dur: "4:18", file: "glass_nocturne.mp3" },
       { title: "Calle Norte", artist: "Sol Fuego", folder: "Latin", dur: "3:44", file: "calle_norte.mp3" },
-      { title: "Ritmo Baja", artist: "Sol Fuego", folder: "Latin", dur: "3:12", file: "ritmo_baja.mp3" },
+      { title: "Ritmo Baja", artist: "Sol Fuego", folder: "Reggaeton", dur: "3:12", file: "ritmo_baja.mp3" },
       { title: "Plaza Drift", artist: "Mar Azul", folder: "Latin", dur: "4:01", file: "plaza_drift.flac" },
       { title: "Fog Layer", artist: "Pale Antenna", folder: "Ambient", dur: "6:20", file: "fog_layer.wav" },
       { title: "Soft Horizon", artist: "Pale Antenna", folder: "Ambient", dur: "5:55", file: "soft_horizon.mp3" },
@@ -521,10 +553,12 @@
       { title: "IMG_2048_audio", artist: "Unknown", folder: "Uncategorized", dur: "1:55", file: "img_2048_audio.m4a" },
     ];
 
+    /** Garde le genre précis du clip (ne pas tout écraser en « Electro »). */
     function normalizeDemoFolder(name) {
       if (!name) return "Uncategorized";
       const n = String(name).trim();
-      if (/^électr/i.test(n) || /^electr/i.test(n)) return "Electro";
+      if (/^électr[oô]$/i.test(n) || /^electro$/i.test(n)) return "Electro";
+      if (/^électronique$/i.test(n)) return "Electronica";
       return n;
     }
 
@@ -542,13 +576,14 @@
     const featured = clips
       .filter((c) => c && c.file && c.title && !/^Remplace-moi/i.test(c.title))
       .map((c) => {
-        const folder = normalizeDemoFolder(c.folder || c.genre || "Electro");
+        const folder = normalizeDemoFolder(c.folder || c.genre || "Uncategorized");
+        const genre = (c.genre || folder).trim();
         return {
           id: c.id || c.file,
           title: c.title,
           artist: c.artist || "Unknown artist",
           folder,
-          genre: folder,
+          genre,
           dur: c.durationSecs ? formatClock(c.durationSecs) : "—",
           file: c.file,
           audio: "clips/" + c.file,
@@ -575,22 +610,33 @@
     const playableQueue = () => TRACKS.filter((t) => t.playable && t.audio);
 
     const SCAN_LINES = [
-      "Opening your folder without touching the tracks…",
-      "Finding MP3, FLAC, M4A and friends…",
-      "Reading tags: artist, title, album…",
-      "Grouping tracks by genre…",
-      "Preparing the folder plan…",
+      "Opening your folder without touching the tracks...",
+      "Finding MP3, FLAC, M4A and friends...",
+      "Reading tags: artist, title, album...",
+      "Grouping tracks by genre...",
+      "Preparing the folder plan...",
     ];
 
     const FOLDER_ORDER = [
       "Rock",
+      "Indie",
       "Metal",
       "Jazz",
       "Hip-Hop",
+      "Trap",
+      "House",
+      "Bass House",
+      "Progressive House",
+      "Techno",
+      "Psytrance",
+      "Drum and Bass",
+      "Electronica",
       "Electro",
       "Pop",
       "Soul",
+      "R&B",
       "Reggae",
+      "Reggaeton",
       "Latin",
       "Classical",
       "Ambient",
@@ -623,7 +669,7 @@
       if (featured.length === 0) {
         clipsNote.hidden = false;
         clipsNote.innerHTML =
-          "Ajoute 4–8 extraits dans <strong>clips/</strong> + <strong>clips.json</strong> pour activer la Preview Live.";
+          "Ajoute 4-8 extraits dans <strong>clips/</strong> + <strong>clips.json</strong> pour activer la Preview Live.";
       }
     }
 
@@ -677,7 +723,7 @@
       if (ringPct) ringPct.textContent = pct + "%";
       if (summary) {
         summary.textContent =
-          classified + " sorted · " + (total - classified) + " uncategorized";
+          classified + " sorted  |  " + (total - classified) + " uncategorized";
       }
       if (rootPathEl && selectedPath) rootPathEl.textContent = selectedPath;
 
@@ -715,7 +761,7 @@
       });
 
       const tracks = stats[selectedFolder] || [];
-      if (detailLabel) detailLabel.textContent = selectedFolder + " · " + tracks.length;
+      if (detailLabel) detailLabel.textContent = selectedFolder + "  |  " + tracks.length;
       if (!tracksEl) return;
       tracksEl.innerHTML = "";
       tracks.forEach((t) => {
@@ -749,8 +795,8 @@
     function runScan() {
       stopScan();
       showStep("scan");
-      setStatus("Analyzing…");
-      showToast("Analyzing folder…", "Read-only — nothing is moved", 3200);
+      setStatus("Analyzing...");
+      showToast("Analyzing folder...", "Read-only - nothing is moved", 3200);
 
       const total = TRACKS.length;
       let done = 0;
@@ -789,7 +835,7 @@
             const n = TRACKS.filter((x) => x.folder !== "Uncategorized").length;
             showToast(
               "Plan ready",
-              n + " tracks sorted · " + (TRACKS.length - n) + " to fix in the app",
+              n + " tracks sorted  |  " + (TRACKS.length - n) + " to fix in the app",
               3000,
             );
             renderPlan();
