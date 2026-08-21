@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Politique de confidentialité — BassOrder</title>
+    <title>Privacy policy — BassOrder</title>
     <meta
       name="description"
-      content="Politique de confidentialité BassOrder : données locales, compte cloud optionnel, Spotify, droits RGPD."
+      content="BassOrder privacy policy: local data, optional cloud account, Spotify, GDPR rights."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -20,204 +20,199 @@
     <header class="top">
       <a class="brand" href="/">Bass<span>Order</span></a>
       <nav>
-        <a href="/privacy.html" aria-current="page">Confidentialité</a>
-        <a href="/terms.html">Conditions</a>
-        <a href="/mentions.html">Mentions</a>
-        <a href="https://github.com/EliotGIRAUD/BassOrder/blob/main/LICENSE">Licence MIT</a>
+        <a href="/privacy.html" aria-current="page">Privacy</a>
+        <a href="/terms.html">Terms</a>
+        <a href="/mentions.html">Legal notice</a>
+        <a href="https://github.com/EliotGIRAUD/BassOrder/blob/main/LICENSE">MIT License</a>
       </nav>
     </header>
 
     <main>
-      <h1>Politique de confidentialité</h1>
-      <p class="meta">Dernière mise à jour · 21 août 2026</p>
+      <h1>Privacy policy</h1>
+      <p class="meta">Last updated · 21 August 2026</p>
 
       <p>
-        BassOrder est une application desktop open source qui aide à
-        <strong>trier de la musique par genres musicaux</strong> (Spotify et
-        fichiers locaux). Cette page explique quelles données sont traitées, où
-        elles restent, et quels sont tes droits.
+        BassOrder is an open-source desktop app that helps
+        <strong>sort music by musical genres</strong> (Spotify and local
+        files). This page explains what data is processed, where it stays, and
+        what your rights are.
       </p>
 
-      <h2>1. Responsable</h2>
+      <h2>1. Controller</h2>
       <p>
-        Le traitement lié au site
-        <a href="https://bassorder.smegg.cloud">bassorder.smegg.cloud</a> et à
-        l’API optionnelle
-        <code>api.bassorder.smegg.cloud</code> est assuré par
-        <strong>Eliot GIRAUD</strong> (projet personnel / open source). Contact
-        pour les demandes vie privée :
+        Processing related to the site
+        <a href="https://bassorder.smegg.cloud">bassorder.smegg.cloud</a> and the
+        optional API
+        <code>api.bassorder.smegg.cloud</code> is carried out by
+        <strong>Eliot GIRAUD</strong> (personal / open-source project). Privacy
+        contact:
         <a href="https://github.com/EliotGIRAUD/BassOrder/issues"
-          >issues GitHub</a
+          >GitHub issues</a
         >
-        (objet « Privacy ») ou advisory sécurité décrit dans
+        (subject “Privacy”) or the security advisory described in
         <a href="https://github.com/EliotGIRAUD/BassOrder/blob/main/SECURITY.md"
           >SECURITY.md</a
         >.
       </p>
 
-      <h2>2. Principes</h2>
+      <h2>2. Principles</h2>
       <ul>
         <li>
-          <strong>Local d’abord</strong> : bibliothèque, tags, historique et
-          profils locaux restent sur ta machine (SQLite).
+          <strong>Local first</strong>: library, tags, history, and local
+          profiles stay on your machine (SQLite).
         </li>
         <li>
-          <strong>Pas de publicité / pas de vente de données</strong>.
+          <strong>No advertising / no sale of data</strong>.
         </li>
         <li>
-          <strong>Pas de télémétrie marketing</strong> dans l’app (pas d’outil
-          d’analytics type Google Analytics sur la landing à ce jour).
+          <strong>No marketing telemetry</strong> in the app (no analytics tool
+          such as Google Analytics on the landing page to date).
         </li>
         <li>
-          Le cloud (compte email + sync « knowledge ») est
-          <strong>optionnel</strong>.
+          The cloud (email account + “knowledge” sync) is
+          <strong>optional</strong>.
         </li>
       </ul>
 
-      <h2>3. Données traitées</h2>
-      <h2 style="font-size: 1.05rem; margin-top: 1.25rem">3.1 Sur ton appareil</h2>
+      <h2>3. Data processed</h2>
+      <h2 style="font-size: 1.05rem; margin-top: 1.25rem">3.1 On your device</h2>
       <ul>
-        <li>Pseudo / couleur de profil local</li>
+        <li>Local profile handle / color</li>
         <li>
-          Métadonnées musicales (artistes, titres, genres proposés / validés),
-          chemins de dossiers que tu choisis
+          Music metadata (artists, titles, suggested / confirmed genres),
+          folder paths you choose
         </li>
         <li>
-          Jetons Spotify (OAuth) stockés localement pour appeler l’API Spotify
-          en ton nom
+          Spotify tokens (OAuth) stored locally to call the Spotify API on your
+          behalf
         </li>
-        <li>PIN / préférences locales si tu les actives</li>
+        <li>PIN / local preferences if you enable them</li>
       </ul>
       <p>
-        Les <strong>fichiers audio</strong> ne sont pas uploadés vers nos
-        serveurs : copie / déplacement se fait sur ton disque.
+        <strong>Audio files</strong> are not uploaded to our servers: copy /
+        move happens on your disk.
       </p>
 
       <h2 style="font-size: 1.05rem; margin-top: 1.25rem">
-        3.2 Compte cloud (optionnel)
+        3.2 Cloud account (optional)
       </h2>
       <ul>
-        <li>Adresse e-mail</li>
-        <li>Mot de passe (stocké sous forme de hash Argon2id, jamais en clair)</li>
-        <li>Jetons JWT / refresh pour la session</li>
+        <li>Email address</li>
+        <li>Password (stored as Argon2id hash, never in plain text)</li>
+        <li>JWT / refresh tokens for the session</li>
         <li>
-          « Knowledge » synchronisé : associations artiste ↔ genre (miroir
-          privé et, si tu participes, contributions à un pool agrégé)
+          Synced “knowledge”: artist ↔ genre associations (private mirror and,
+          if you participate, contributions to an aggregated pool)
         </li>
       </ul>
       <p>
-        Base légale : <strong>exécution du service</strong> que tu demandes
-        (compte + sync) et, pour le pool agrégé, ton
-        <strong>consentement / usage volontaire</strong> de la fonction.
+        Legal basis: <strong>performance of the service</strong> you request
+        (account + sync) and, for the aggregated pool, your
+        <strong>consent / voluntary use</strong> of the feature.
       </p>
 
-      <h2 style="font-size: 1.05rem; margin-top: 1.25rem">3.3 Site web</h2>
+      <h2 style="font-size: 1.05rem; margin-top: 1.25rem">3.3 Website</h2>
       <ul>
         <li>
-          Logs techniques du serveur web / reverse-proxy (IP, user-agent, URL)
-          pour sécurité et diagnostic — conservation limitée
+          Technical logs from the web server / reverse proxy (IP, user-agent,
+          URL) for security and diagnostics — limited retention
         </li>
-        <li>Téléchargement des installateurs (pas de compte requis)</li>
+        <li>Installer downloads (no account required)</li>
       </ul>
 
       <h2>4. Spotify</h2>
       <p>
-        Si tu connectes Spotify, le traitement des données Spotify est aussi
-        régi par les
+        If you connect Spotify, Spotify data processing is also governed by
         <a href="https://www.spotify.com/legal/privacy-policy/"
-          >règles de confidentialité Spotify</a
+          >Spotify’s privacy policy</a
         >
-        et les conditions développeur Spotify. BassOrder n’est
-        <strong>pas affilié</strong> à Spotify AB. Tu peux révoquer l’accès dans
-        les paramètres de ton compte Spotify.
+        and Spotify developer terms. BassOrder is
+        <strong>not affiliated</strong> with Spotify AB. You can revoke access
+        in your Spotify account settings.
       </p>
 
-      <h2>5. Destinataires &amp; hébergement</h2>
+      <h2>5. Recipients &amp; hosting</h2>
       <ul>
         <li>
-          Données locales : uniquement toi (et les programmes que tu autorises
-          sur ta machine)
+          Local data: only you (and programs you authorize on your machine)
         </li>
         <li>
-          API / site : hébergement VPS (domaine <code>smegg.cloud</code>) —
-          accès réservé à l’administration du projet
+          API / site: VPS hosting (<code>smegg.cloud</code> domain) — access
+          limited to project administration
         </li>
         <li>
-          Code source public :
+          Public source code:
           <a href="https://github.com/EliotGIRAUD/BassOrder">GitHub</a>
-          (pas tes données personnelles d’usage)
+          (not your personal usage data)
         </li>
       </ul>
       <p>
-        Pas de revente à des brokers. Pas de sous-traitants marketing. Les
-        prestataires d’infra (hébergeur, certificats TLS) peuvent voir des
-        métadonnées techniques inhérentes à Internet.
+        No resale to brokers. No marketing subprocessors. Infrastructure
+        providers (host, TLS certificates) may see technical metadata inherent
+        to the Internet.
       </p>
 
-      <h2>6. Durées de conservation</h2>
+      <h2>6. Retention periods</h2>
       <ul>
-        <li>Local : tant que tu gardes l’app / la base SQLite</li>
+        <li>Local: as long as you keep the app / SQLite database</li>
         <li>
-          Compte cloud : jusqu’à suppression du compte ou demande d’effacement
+          Cloud account: until account deletion or erasure request
         </li>
-        <li>Logs serveur : durée courte, besoins sécurité / exploitation</li>
+        <li>Server logs: short duration, security / ops needs</li>
       </ul>
 
-      <h2>7. Sécurité</h2>
+      <h2>7. Security</h2>
       <p>
-        HTTPS, mots de passe hashés, rate-limit sur l’auth, principe du moindre
-        privilège sur le serveur. Aucun système n’est infaillible : signale une
-        faille via
+        HTTPS, hashed passwords, auth rate-limiting, least-privilege on the
+        server. No system is perfect: report a vulnerability via
         <a href="https://github.com/EliotGIRAUD/BassOrder/blob/main/SECURITY.md"
           >SECURITY.md</a
         >.
       </p>
 
-      <h2>8. Tes droits (RGPD)</h2>
-      <p>Selon le droit applicable (UE / France), tu peux demander :</p>
+      <h2>8. Your rights (GDPR)</h2>
+      <p>Under applicable law (EU / France), you may request:</p>
       <ul>
-        <li>accès, rectification, effacement</li>
-        <li>limitation ou opposition</li>
-        <li>portabilité des données que tu as fournies (ex. email / knowledge)</li>
-        <li>retrait du consentement pour les usages optionnels</li>
+        <li>access, rectification, erasure</li>
+        <li>restriction or objection</li>
+        <li>portability of data you provided (e.g. email / knowledge)</li>
+        <li>withdrawal of consent for optional uses</li>
       </ul>
       <p>
-        Pour exercer ces droits : ouvre une issue « Privacy » sur le dépôt ou
-        contacte le mainteneur. Tu peux aussi introduire une réclamation auprès
-        de la
+        To exercise these rights: open a “Privacy” issue on the repository or
+        contact the maintainer. You may also lodge a complaint with the
         <a href="https://www.cnil.fr/">CNIL</a>.
       </p>
 
-      <h2>9. Mineurs</h2>
+      <h2>9. Minors</h2>
       <p>
-        Le service n’est pas destiné aux enfants de moins de 15 ans (ou âge
-        local équivalent). Ne crée pas de compte cloud si tu n’as pas l’âge
-        requis.
+        The service is not intended for children under 15 (or the equivalent
+        local age). Do not create a cloud account if you are under the required
+        age.
       </p>
 
-      <h2>10. Modifications</h2>
+      <h2>10. Changes</h2>
       <p>
-        Cette politique peut évoluer avec le projet. La date en tête de page
-        fait foi. Pour les changements importants, une note pourra être ajoutée
-        sur le site ou le dépôt.
+        This policy may evolve with the project. The date at the top of the
+        page is authoritative. For material changes, a note may be added on the
+        site or repository.
       </p>
 
       <p class="note">
-        Cette politique s’applique uniquement au service BassOrder exploité par
-        l’éditeur à l’adresse indiquée ci-dessus. Toute redistribution du
-        logiciel, toute instance auto-hébergée ou tout service tiers basé sur
-        BassOrder relèvent de la seule responsabilité de la personne qui les
-        exploite, y compris au regard de la réglementation applicable aux
-        données personnelles.
+        This policy applies only to the BassOrder service operated by the
+        publisher at the address indicated above. Any redistribution of the
+        software, any self-hosted instance, or any third-party service based on
+        BassOrder is solely the responsibility of the person who operates it,
+        including under applicable personal data regulations.
       </p>
     </main>
 
     <footer>
       <span>© 2026 Eliot GIRAUD · MIT</span>
       <span>
-        <a href="/terms.html">Conditions</a> ·
-        <a href="/mentions.html">Mentions</a> ·
-        <a href="/">Accueil</a>
+        <a href="/terms.html">Terms</a> ·
+        <a href="/mentions.html">Legal notice</a> ·
+        <a href="/">Home</a>
       </span>
     </footer>
   </body>
