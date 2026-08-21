@@ -1676,11 +1676,18 @@
       .sim-plan-cta {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.65rem;
+        gap: 0.75rem 1rem;
         align-items: center;
+        justify-content: space-between;
         margin-top: 1rem;
         padding-top: 0.85rem;
         border-top: 1px solid var(--line);
+      }
+      .sim-plan-cta-left {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+        align-items: center;
       }
       .sim-plan-cta .linkish {
         background: none;
@@ -2101,16 +2108,18 @@
         pointer-events: none;
       }
 
-      /* -- Nudge download (bas droite de la mini-demo, après analyse) -- */
-      .sim .dl-nudge {
-        position: absolute;
-        right: 0.85rem;
-        bottom: 0.85rem;
-        z-index: 7;
+      /* -- Nudge download (ligne CTA plan, à droite après analyse) -- */
+      .sim-plan-cta .dl-nudge {
+        position: relative;
+        right: auto;
+        bottom: auto;
+        z-index: 1;
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        max-width: min(19rem, calc(100% - 1.7rem));
+        flex: 1 1 16rem;
+        max-width: min(22rem, 100%);
+        margin-left: auto;
         padding: 0.7rem 0.85rem 0.7rem 0.7rem;
         border-radius: 14px;
         text-decoration: none;
@@ -2122,7 +2131,7 @@
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
-        transform: translateY(10px) scale(0.97);
+        transform: translateY(8px) scale(0.98);
         transition:
           opacity 0.35s var(--ease),
           transform 0.35s var(--ease),
@@ -2132,17 +2141,17 @@
         --mx: 0px;
         --my: 0px;
       }
-      .sim .dl-nudge.is-on {
+      .sim-plan-cta .dl-nudge.is-on {
         opacity: 1;
         visibility: visible;
         pointer-events: auto;
         transform: translate(var(--mx), var(--my)) scale(1);
       }
-      .sim .dl-nudge:hover {
+      .sim-plan-cta .dl-nudge:hover {
         border-color: color-mix(in srgb, var(--accent) 75%, transparent);
         background: rgba(10, 16, 18, 0.98);
       }
-      .sim .dl-nudge:focus-visible {
+      .sim-plan-cta .dl-nudge:focus-visible {
         outline: 2px solid var(--accent);
         outline-offset: 3px;
       }
@@ -2187,19 +2196,16 @@
         font-weight: 700;
         transition: transform 0.2s var(--ease);
       }
-      .sim .dl-nudge:hover .dl-nudge-arrow {
+      .sim-plan-cta .dl-nudge:hover .dl-nudge-arrow {
         transform: translateY(2px);
       }
-      .sim-panel[data-step="plan"].is-on {
-        padding-bottom: 5.5rem;
-      }
-      @media (max-width: 640px) {
-        .sim .dl-nudge {
-          left: 0.75rem;
-          right: 0.75rem;
+      @media (max-width: 720px) {
+        .sim-plan-cta .dl-nudge {
+          flex: 1 1 100%;
           max-width: none;
+          margin-left: 0;
         }
-        .sim .dl-nudge-copy strong {
+        .sim-plan-cta .dl-nudge-copy strong {
           font-size: 0.8rem;
         }
       }
@@ -2215,14 +2221,14 @@
           animation: none !important;
           transition: none !important;
         }
-        .sim .dl-nudge {
+        .sim-plan-cta .dl-nudge {
           transition: opacity 0.2s ease, visibility 0.2s;
           transform: none;
         }
-        .sim .dl-nudge.is-on {
+        .sim-plan-cta .dl-nudge.is-on {
           transform: none;
         }
-        .sim .dl-nudge:hover .dl-nudge-arrow {
+        .sim-plan-cta .dl-nudge:hover .dl-nudge-arrow {
           transform: none;
         }
       }
@@ -2703,34 +2709,35 @@
                   </div>
                 </div>
                 <div class="sim-plan-cta">
+                  <div class="sim-plan-cta-left">
+                    <a
+                      class="btn btn-primary mag"
+                      href="/downloads/BassOrder_0.1.5_x64_en-US.msi"
+                      >Download for Windows</a
+                    >
+                    <button type="button" class="linkish" id="simReplay">Replay the demo</button>
+                  </div>
                   <a
-                    class="btn btn-primary mag"
+                    class="dl-nudge mag"
+                    id="dlNudge"
                     href="/downloads/BassOrder_0.1.5_x64_en-US.msi"
-                    >Download for Windows</a
+                    download
+                    aria-label="Télécharger BassOrder pour Windows — récupère tes titres triés par genre sur ton PC"
+                    hidden
                   >
-                  <button type="button" class="linkish" id="simReplay">Replay the demo</button>
+                    <span class="dl-nudge-mark" aria-hidden="true"></span>
+                    <span class="dl-nudge-copy">
+                      <strong>Récupère tes titres triés par genre sur ton PC</strong>
+                      <span>Télécharger BassOrder pour Windows</span>
+                    </span>
+                    <span class="dl-nudge-arrow" aria-hidden="true">&darr;</span>
+                  </a>
                 </div>
                 <p class="sim-clips-note" id="simClipsNote" hidden>
                   Click a track marked <strong>listen</strong> to open Live Preview.
                 </p>
               </div>
             </div>
-
-            <a
-              class="dl-nudge mag"
-              id="dlNudge"
-              href="/downloads/BassOrder_0.1.5_x64_en-US.msi"
-              download
-              aria-label="Télécharger BassOrder pour Windows — récupère tes titres triés par genre sur ton PC"
-              hidden
-            >
-              <span class="dl-nudge-mark" aria-hidden="true"></span>
-              <span class="dl-nudge-copy">
-                <strong>Récupère tes titres triés par genre sur ton PC</strong>
-                <span>Télécharger BassOrder pour Windows</span>
-              </span>
-              <span class="dl-nudge-arrow" aria-hidden="true">&darr;</span>
-            </a>
           </div>
         </div>
       </section>
