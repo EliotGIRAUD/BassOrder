@@ -145,6 +145,12 @@ server {
     include /etc/nginx/snippets/bassorder-security-headers.conf;
     add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; media-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
 
+    location = /sitemap.xml {
+        types { application/xml xml; }
+        default_type application/xml;
+        try_files $uri =404;
+    }
+
     location / {
         try_files $uri $uri/ =404;
     }
