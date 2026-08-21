@@ -1,22 +1,29 @@
 //! Knowledge cloud — miroir privé + pool agrégé lecture seule.
+//! Entrées client : jamais de confiance aveugle (plafonds, rate-limit, quorum pool).
 
 use crate::auth;
 use crate::db::MirrorArtistRow;
 use crate::error::{ApiError, ApiResult};
 use crate::state::AppState;
 use axum::{
-    extract::{Query, State},
+    extract::{ConnectInfo, Query, State},
     http::HeaderMap,
     Json,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::net::SocketAddr;
 
-const MAX_MIRROR_ARTISTS: usize = 50_000;
+const MAX_MIRROR_ARTISTS: usize = 20_000;
 const MAX_POOL_LIMIT: i64 = 5_000;
 const MAX_POOL_KEYS: usize = 2_000;
 const MAX_PROFILE_ID_LEN: usize = 128;
 const MAX_ARTIST_KEY_LEN: usize = 256;
+const MAX_DISPLAY_NAME_LEN: usize = 128;
+const MAX_SYNCED_AT_LEN: usize = 64;
+const MAX_RAW_GENRES: usize = 32;
+const MAX_RAW_GENRE_LEN: usize = 64;
+const MAX_LIKED_COUNT: u64 = 1_000_000;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -124,12 +131,48 @@ fn validate_profile_id(id: &str) -> ApiResult<&str> {
     Ok(t)
 }
 
+fn sanitize_optional_text(value: Option<&str>, max: usize) -> Option<String> {
+    let s = value?.trim();
+    if s.is_empty() {
+        return None;
+    }
+    if s.chars().any(|c| c.is_control()) {
+        return None;
+    }
+    Some(s.chars().take(max).collect())
+}
+
+fn sanitize_raw_genres(raw: &[String]) -> String {
+    let cleaned: Vec<String> = raw
+        .iter()
+        .take(MAX_RAW_GENRES)
+        .map(|g| g.trim().chars().take(MAX_RAW_GENRE_LEN).collect::<String>())
+        .filter(|g| !g.is_empty() && !g.chars().any(|c| c.is_control()))
+        .collect();
+    serde_json::to_string(&cleaned).unwrap_or_else(|_| "[]".into())
+}
+
 pub async fn put_mirror(
     State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     Json(body): Json<MirrorPutBody>,
 ) -> ApiResult<Json<MirrorPutResponse>> {
     let account = auth::require_account(&state, &headers)?;
+    // Rate-limit par compte + par IP (clés distinctes, un check chacune).
+    let write_key = format!("kw|acct|{}", account.id);
+    let ip_key = format!(
+        "kw|ip|{}",
+        crate::rate_limit::client_ip(Some(addr), &headers)
+    );
+    if !state.knowledge_write_limiter.check(&write_key)
+        || !state.knowledge_write_limiter.check(&ip_key)
+    {
+        return Err(ApiError::TooManyRequests(
+            "Trop de sync knowledge — réessaie plus tard.".into(),
+        ));
+    }
+
     let profile_id = validate_profile_id(&body.profile_id)?.to_string();
 
     if body.artists.len() > MAX_MIRROR_ARTISTS {
@@ -138,23 +181,34 @@ pub async fn put_mirror(
         )));
     }
 
+    let likes_cap = state.likes_cap.clamp(1, i64::from(u32::MAX)) as u32;
+    let display_name = sanitize_optional_text(body.display_name.as_deref(), MAX_DISPLAY_NAME_LEN);
+    let synced_at = sanitize_optional_text(body.synced_at.as_deref(), MAX_SYNCED_AT_LEN);
+    let liked_count = body.liked_count.min(MAX_LIKED_COUNT) as i64;
+
     let mut rows: Vec<MirrorArtistRow> = Vec::with_capacity(body.artists.len());
     for (key, artist) in &body.artists {
         let artist_key = key.trim();
         if artist_key.is_empty() || artist_key.len() > MAX_ARTIST_KEY_LEN {
             continue;
         }
+        if artist_key.chars().any(|c| c.is_control()) {
+            continue;
+        }
         let parent = artist.parent.trim();
         if parent.is_empty() {
             continue;
         }
-        let raw = serde_json::to_string(&artist.raw_genres).unwrap_or_else(|_| "[]".into());
+        if parent.chars().any(|c| c.is_control()) {
+            continue;
+        }
+        let likes = i64::from(artist.likes.min(likes_cap));
         rows.push(MirrorArtistRow {
             artist_key: artist_key.to_string(),
             name: artist.name.trim().chars().take(256).collect(),
             spotify_id: artist.spotify_id.trim().chars().take(64).collect(),
-            likes: i64::from(artist.likes),
-            raw_genres: raw,
+            likes,
+            raw_genres: sanitize_raw_genres(&artist.raw_genres),
             parent: parent.chars().take(128).collect(),
             sub: artist.sub.trim().chars().take(128).collect(),
         });
@@ -164,9 +218,9 @@ pub async fn put_mirror(
         &account.id,
         &profile_id,
         i64::from(body.version.max(1)),
-        body.synced_at.as_deref(),
-        body.display_name.as_deref(),
-        body.liked_count as i64,
+        synced_at.as_deref(),
+        display_name.as_deref(),
+        liked_count,
         &rows,
     )?;
 
@@ -238,9 +292,12 @@ pub async fn get_pool(
         .unwrap_or(MAX_POOL_LIMIT)
         .clamp(1, MAX_POOL_LIMIT);
 
-    let rows = state
-        .db
-        .knowledge_pool(keys.as_deref(), limit)?;
+    let rows = state.db.knowledge_pool(
+        keys.as_deref(),
+        limit,
+        state.pool_min_votes,
+        state.likes_cap,
+    )?;
 
     Ok(Json(PoolResponse {
         entries: rows

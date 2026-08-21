@@ -39,3 +39,10 @@ deploy/.env
 
 release/
 
+# Extraits audio landing (ne pas pousser sur GitHub public)
+deploy/landing/clips/*.mp3
+deploy/landing/clips/*.m4a
+deploy/landing/clips/*.wav
+deploy/landing/clips/*.flac
+deploy/landing/clips/*.ogg
+

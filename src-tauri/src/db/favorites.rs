@@ -414,20 +414,40 @@ fn validate_api_base_url(url: &str) -> Result<(), String> {
         return Ok(());
     }
     let lower = u.to_ascii_lowercase();
-    let ok = (lower.starts_with("http://127.0.0.1")
-        || lower.starts_with("http://localhost")
-        || lower.starts_with("https://127.0.0.1")
-        || lower.starts_with("https://localhost")
-        || lower.starts_with("https://"))
-        && !lower.contains('@')
-        && !lower.contains('\\');
-    if ok {
-        Ok(())
-    } else {
-        Err(
-            "URL API non autorisée (localhost http(s) ou https public uniquement).".into(),
-        )
+    if lower.contains('@') || lower.contains('\\') || lower.contains(' ') {
+        return Err("URL API non autorisée.".into());
     }
+
+    let without_slash = lower.trim_end_matches('/');
+    let allowed_exact = [
+        "https://api.bassorder.smegg.cloud",
+        "http://127.0.0.1:8787",
+        "http://localhost:8787",
+        "http://127.0.0.1",
+        "http://localhost",
+        "https://127.0.0.1:8787",
+        "https://localhost:8787",
+    ];
+    if allowed_exact.iter().any(|a| without_slash == *a) {
+        return Ok(());
+    }
+
+    // Ports locaux arbitraires : http(s)://127.0.0.1:PORT ou localhost:PORT
+    for host in ["127.0.0.1", "localhost"] {
+        for scheme in ["http://", "https://"] {
+            let prefix = format!("{scheme}{host}:");
+            if let Some(rest) = without_slash.strip_prefix(&prefix) {
+                if !rest.is_empty() && rest.chars().all(|c| c.is_ascii_digit()) {
+                    return Ok(());
+                }
+            }
+        }
+    }
+
+    Err(
+        "URL API non autorisée (localhost ou https://api.bassorder.smegg.cloud uniquement)."
+            .into(),
+    )
 }
 
 #[tauri::command]

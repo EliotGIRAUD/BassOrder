@@ -261,6 +261,14 @@ pub async fn refresh(
         .take_refresh(&hashed)?
         .ok_or_else(|| ApiError::Unauthorized("Refresh invalide.".into()))?;
     if row.revoked || row.expires_at < now_secs() {
+        // Réutilisation d’un refresh déjà révoqué → probable vol : wipe toutes les sessions.
+        if row.revoked {
+            let _ = state.db.revoke_all_refresh_for_account(&row.account_id);
+            tracing::warn!(
+                account_id = %row.account_id,
+                "refresh token reuse détecté — sessions révoquées"
+            );
+        }
         return Err(ApiError::Unauthorized("Refresh expiré.".into()));
     }
     let account = state
@@ -275,10 +283,19 @@ pub async fn logout(
     headers: HeaderMap,
     Json(body): Json<RefreshBody>,
 ) -> ApiResult<impl IntoResponse> {
-    let _ = bearer(&headers); // access optional for revoke
-    let _ = state
-        .db
-        .revoke_refresh_hash(&hash_token(&body.refresh_token));
+    // Si access JWT valide → révoque TOUTES les sessions du compte.
+    if let Ok(token) = bearer(&headers) {
+        if let Ok(claims) = decode_access(&state, &token) {
+            let _ = state.db.revoke_all_refresh_for_account(&claims.sub);
+            return Ok(axum::http::StatusCode::NO_CONTENT);
+        }
+    }
+    // Sinon, révoque uniquement le refresh fourni (best-effort).
+    if !body.refresh_token.trim().is_empty() {
+        let _ = state
+            .db
+            .revoke_refresh_hash(&hash_token(&body.refresh_token));
+    }
     Ok(axum::http::StatusCode::NO_CONTENT)
 }
 

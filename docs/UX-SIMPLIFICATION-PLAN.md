@@ -110,17 +110,15 @@ Fichier `/.github/workflows/release.yml` :
 
 ## Phases d’implémentation
 
-| Phase | Contenu | Effort |
-|---|---|---|
-| **P0** | Copy / rename UI (Espace, Compte Spotify) | S |
-| **P1** | Single-user : retirer gate multi + migration last-user | M |
-| **P2** | Wizard Spotify-first + Local accessible | M |
-| **P3** | Fusion Profil+Compte → Mon espace | M |
-| **P4** | Spotify 1 compte défaut ; multi en Avancé | S–M |
-| **P5** | CI macOS + landing Mac + upload VPS | M |
-| **P6** | Empty states / tooltips parcours | S |
-
-Ordre conseillé : **P1 → P2 → P3 → P4**, puis **P5 Mac** en parallèle dès que Windows est stable.
+| Phase | Contenu | Effort | Statut |
+|---|---|---|---|
+| **P0** | Copy / rename UI (Espace, Compte Spotify) | S | à faire |
+| **P1** | Single-user : retirer gate multi + migration last-user | M | **fait** |
+| **P2** | Wizard Spotify-first + Local accessible | M | à faire |
+| **P3** | Fusion Profil+Compte → Mon espace | M | à faire |
+| **P4** | Spotify 1 compte défaut ; multi en Avancé | S–M | à faire |
+| **P5** | CI macOS + landing Mac + upload VPS | M | **CI faite** (unsigned) ; artefacts via Actions |
+| **P6** | Empty states / tooltips parcours | S | à faire |
 
 ---
 

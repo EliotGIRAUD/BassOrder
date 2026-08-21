@@ -6,7 +6,7 @@
     <title>BassOrder — Trie ta musique par genre</title>
     <meta
       name="description"
-      content="BassOrder classe Spotify et ta bibliothèque locale par genre. App desktop immersive."
+      content="BassOrder trie tes playlists Spotify et fichiers locaux par genre musical — app desktop Windows."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -40,6 +40,7 @@
         scroll-behavior: smooth;
         color-scheme: dark;
         background: #000;
+        scroll-snap-type: y proximity;
       }
       body {
         margin: 0;
@@ -174,9 +175,9 @@
         align-items: flex-end;
         justify-content: center;
         gap: 0.4vw;
-        height: 16vh;
+        height: 14vh;
         padding: 0 4vw 1vh;
-        opacity: calc(0.2 + (1 - var(--mood)) * 0.35);
+        opacity: calc(0.18 + (1 - var(--mood)) * 0.32);
         pointer-events: none;
         mask-image: linear-gradient(to top, black, transparent);
       }
@@ -192,7 +193,7 @@
         height: calc(12% + var(--h) * 88%);
         transform-origin: bottom;
         animation: eqPulse calc(0.7s + var(--h) * 0.9s) ease-in-out infinite alternate;
-        animation-delay: calc(var(--d) * -1s);
+        animation-delay: calc(var(--d, 0) * -1s);
       }
       @keyframes eqPulse {
         from {
@@ -203,71 +204,220 @@
         }
       }
 
-      /* floating genre chips */
-      .chips-layer {
+      /* —— App chrome flottant (décor) —— */
+      .float-ui {
         position: fixed;
         inset: 0;
         z-index: 2;
         pointer-events: none;
+        overflow: hidden;
       }
-      .chip {
+      .float-ui > * {
         position: absolute;
-        pointer-events: auto;
-        user-select: none;
-        touch-action: none;
-        padding: 0.45rem 0.85rem;
+        will-change: transform;
+      }
+      .fu-rail {
+        left: 3%;
+        top: 18%;
+        width: 4.6rem;
+        padding: 0.85rem 0.45rem;
+        border-radius: 18px;
+        background: rgba(8, 12, 14, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(14px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.55rem;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+        opacity: 0.72;
+      }
+      .fu-logo {
+        width: 2.1rem;
+        height: 2.1rem;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 40%, transparent);
+      }
+      .fu-nav {
+        width: 2.35rem;
+        height: 2.35rem;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+        position: relative;
+      }
+      .fu-nav.is-on {
+        border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+        box-shadow: inset 0 0 12px color-mix(in srgb, var(--accent) 15%, transparent);
+      }
+      .fu-nav::after {
+        content: "";
+        position: absolute;
+        inset: 30%;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.35);
+      }
+      .fu-nav.is-on::after {
+        background: var(--accent);
+      }
+      .fu-chip {
+        padding: 0.4rem 0.75rem;
         border-radius: 999px;
         font-family: var(--font-mono);
-        font-size: 0.72rem;
-        letter-spacing: 0.06em;
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: var(--ink);
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(0, 0, 0, 0.45);
         backdrop-filter: blur(10px);
-        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
-        cursor: grab;
-        transition:
-          border-color 0.2s var(--ease),
-          box-shadow 0.2s var(--ease),
-          transform 0.2s var(--ease);
-        will-change: transform, left, top;
-      }
-      .chip:hover {
-        border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-        box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 25%, transparent);
-      }
-      .chip.is-held {
-        cursor: grabbing;
-        z-index: 5;
-        border-color: var(--accent);
-        transform: scale(1.06);
-      }
-      .chip[data-tone="mint"] {
         color: var(--accent);
+        opacity: 0.8;
       }
-      .chip[data-tone="blue"] {
-        color: var(--accent-2);
-      }
-      .chip[data-tone="gold"] {
+      .fu-chip.t-gold {
         color: var(--gold);
       }
-      .chip[data-tone="spotify"] {
+      .fu-chip.t-blue {
+        color: var(--accent-2);
+      }
+      .fu-chip.t-spot {
         color: var(--spotify);
+      }
+      .fu-push {
+        width: min(15rem, 28vw);
+        padding: 0.7rem 0.85rem;
+        border-radius: 14px;
+        background: rgba(8, 12, 14, 0.65);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px);
+        opacity: 0.75;
+      }
+      .fu-push-label {
+        display: flex;
+        justify-content: space-between;
+        font-family: var(--font-mono);
+        font-size: 0.65rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 0.45rem;
+      }
+      .fu-push-label b {
+        color: var(--accent);
+        font-weight: 500;
+      }
+      .fu-push-track {
+        height: 0.55rem;
+        border-radius: 99px;
+        background: rgba(255, 255, 255, 0.06);
+        overflow: hidden;
+      }
+      .fu-push-fill {
+        height: 100%;
+        width: var(--w, 62%);
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 40%, transparent);
+      }
+      .fu-toast {
+        width: min(16rem, 70vw);
+        padding: 0.75rem 0.9rem;
+        border-radius: 14px;
+        background: rgba(8, 12, 14, 0.78);
+        border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+        backdrop-filter: blur(14px);
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+        opacity: 0.78;
+      }
+      .fu-toast strong {
+        display: block;
+        font-size: 0.88rem;
+        margin-bottom: 0.2rem;
+      }
+      .fu-toast span {
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+      .fu-card {
+        width: min(13rem, 42vw);
+        padding: 0.65rem 0.75rem;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        background: rgba(8, 12, 14, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px);
+        opacity: 0.7;
+      }
+      .fu-card i {
+        width: 2.1rem;
+        height: 2.1rem;
+        border-radius: 8px;
+        flex-shrink: 0;
+        background: linear-gradient(135deg, var(--spotify), var(--accent));
+      }
+      .fu-card b {
+        display: block;
+        font-size: 0.82rem;
+      }
+      .fu-card span {
+        font-size: 0.7rem;
+        color: var(--muted);
+      }
+      .fu-folder {
+        width: 7.5rem;
+        padding: 0.85rem 0.75rem 0.7rem;
+        border-radius: 14px;
+        border: 1px dashed rgba(255, 255, 255, 0.18);
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(10px);
+        opacity: 0.65;
+      }
+      .fu-folder em {
+        font-style: normal;
+        font-family: var(--font-mono);
+        font-size: 0.65rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .fu-folder strong {
+        display: block;
+        margin-top: 0.35rem;
+        font-family: var(--font-display);
+        font-size: 1.05rem;
+      }
+      @media (max-width: 900px) {
+        .fu-rail,
+        .fu-push,
+        .fu-toast {
+          opacity: 0.35;
+          scale: 0.85;
+        }
+        .fu-card,
+        .fu-folder {
+          display: none;
+        }
       }
 
       .content {
         position: relative;
-        z-index: 3;
+        z-index: 4;
       }
 
       /* —— Hero —— */
       .stage {
         position: relative;
+        z-index: 4;
         min-height: 100vh;
+        min-height: 100dvh;
         display: grid;
         align-items: end;
         padding: clamp(1.5rem, 4vw, 3rem);
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
       }
       .hero {
         width: min(44rem, 100%);
@@ -367,23 +517,32 @@
         border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
       }
 
-      /* —— Sections —— */
+      /* —— Sections plein écran —— */
       section.block {
-        padding: clamp(3.5rem, 10vh, 6.5rem) clamp(1.25rem, 5vw, 3.5rem);
+        position: relative;
+        z-index: 4;
+        min-height: 100vh;
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        padding: clamp(4.5rem, 8vh, 6rem) clamp(1.25rem, 5vw, 3.5rem);
         border-top: 1px solid var(--line);
+        background: linear-gradient(
+          180deg,
+          rgba(0, 0, 0, 0.28) 0%,
+          rgba(0, 0, 0, 0.42) 45%,
+          rgba(0, 0, 0, 0.5) 100%
+        );
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
       }
       .block-inner {
-        width: min(54rem, 100%);
+        width: min(56rem, 100%);
         margin: 0 auto;
+        position: relative;
+        z-index: 1;
       }
       .reveal {
-        opacity: 0;
-        transform: translateY(28px);
-        transition:
-          opacity 0.7s var(--ease),
-          transform 0.7s var(--ease);
-      }
-      .reveal.is-in {
         opacity: 1;
         transform: none;
       }
@@ -403,7 +562,8 @@
         margin: 0 0 1rem;
         max-width: 18ch;
       }
-      .block p {
+      .block > .block-inner > p,
+      .block-inner > p {
         margin: 0 0 1rem;
         color: var(--muted);
         font-size: 1.05rem;
@@ -420,8 +580,10 @@
         margin-top: 1.75rem;
         padding: 1.35rem 1.25rem 1.25rem;
         border-radius: 20px;
-        background: rgba(255, 255, 255, 0.03);
+        background: rgba(0, 0, 0, 0.35);
+        border: 1px solid rgba(255, 255, 255, 0.06);
         isolation: isolate;
+        backdrop-filter: blur(8px);
       }
       .spin-border {
         position: absolute;
@@ -468,14 +630,20 @@
         padding: 0;
         list-style: none;
         display: grid;
-        gap: 1.25rem;
+        gap: 1.1rem;
+      }
+      @media (min-width: 860px) {
+        .steps {
+          grid-template-columns: 1fr 1fr;
+          gap: 1.25rem 1.75rem;
+        }
       }
       .steps li {
         display: grid;
         grid-template-columns: auto 1fr;
-        gap: 1rem 1.15rem;
+        gap: 0.85rem 1rem;
         align-items: start;
-        padding: 0.35rem 0;
+        padding: 0.25rem 0;
       }
       .steps .n {
         font-family: var(--font-display);
@@ -488,14 +656,17 @@
       .steps h3 {
         font-family: var(--font-display);
         font-weight: 700;
-        font-size: 1.15rem;
-        margin: 0 0 0.35rem;
+        font-size: 1.1rem;
+        margin: 0 0 0.3rem;
         letter-spacing: -0.02em;
         color: var(--ink);
       }
       .steps p {
         margin: 0;
-        font-size: 0.98rem;
+        font-size: 0.95rem;
+        color: var(--muted);
+        line-height: 1.5;
+        max-width: none;
       }
 
       .split {
@@ -512,10 +683,11 @@
         position: relative;
         padding: 1.35rem 1.25rem;
         border-radius: 20px;
-        background: rgba(255, 255, 255, 0.03);
+        background: rgba(0, 0, 0, 0.38);
         overflow: hidden;
         transition: transform 0.25s var(--ease), border-color 0.25s ease;
-        border: 1px solid transparent;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        backdrop-filter: blur(8px);
       }
       .panel:hover {
         transform: translateY(-3px);
@@ -528,35 +700,965 @@
         margin: 0 0 0.5rem;
         color: var(--ink);
       }
+      .panel p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 1rem;
+        line-height: 1.55;
+        max-width: none;
+      }
 
-      .orbit-wrap {
-        margin-top: 1.5rem;
-        height: 220px;
+      /* —— Simu scan local —— */
+      .sim {
+        margin-top: 1.35rem;
         border-radius: 20px;
+        border: 1px solid var(--line);
+        background: rgba(0, 0, 0, 0.52);
         overflow: hidden;
         position: relative;
-        background: rgba(0, 0, 0, 0.35);
-        border: 1px solid var(--line);
-        cursor: grab;
+        backdrop-filter: blur(12px);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+        min-height: min(52vh, 420px);
       }
-      .orbit-wrap:active {
-        cursor: grabbing;
-      }
-      .orbit-wrap canvas {
-        display: block;
-        width: 100%;
-        height: 100%;
-      }
-      .orbit-hint {
-        position: absolute;
-        left: 1rem;
-        bottom: 0.85rem;
+      .sim-head {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.85rem 1rem;
+        border-bottom: 1px solid var(--line);
         font-family: var(--font-mono);
-        font-size: 0.7rem;
+        font-size: 0.72rem;
         letter-spacing: 0.08em;
         text-transform: uppercase;
         color: var(--muted);
+      }
+      .sim-head strong {
+        color: var(--accent);
+        font-weight: 500;
+      }
+      .sim-stage {
+        position: relative;
+        min-height: min(48vh, 380px);
+      }
+      .sim-panel {
+        display: none;
+        padding: 1.25rem 1.15rem 1.35rem;
+        animation: rise 0.45s var(--ease) both;
+      }
+      .sim-panel.is-on {
+        display: block;
+      }
+      .sim-idle {
+        text-align: center;
+        max-width: 26rem;
+        margin: 0 auto;
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+      }
+      .sim-idle .sim-eq {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        gap: 4px;
+        height: 2.5rem;
+        margin-bottom: 1.25rem;
+        opacity: 0.7;
+      }
+      .sim-idle .sim-eq i {
+        width: 5px;
+        border-radius: 99px 99px 0 0;
+        background: linear-gradient(to top, transparent, var(--accent));
+        height: calc(30% + var(--h, 0.5) * 70%);
+        animation: eqPulse calc(0.6s + var(--h, 0.5) * 0.8s) ease-in-out infinite alternate;
+      }
+      .sim-idle h3 {
+        font-family: var(--font-display);
+        font-size: 1.35rem;
+        margin: 0 0 0.5rem;
+        letter-spacing: -0.03em;
+      }
+      .sim-idle p {
+        margin: 0 0 1.35rem;
+        color: var(--muted);
+        font-size: 0.95rem;
+        line-height: 1.5;
+        max-width: none;
+      }
+      .sim-toast {
+        position: absolute;
+        right: 1rem;
+        top: 3.6rem;
+        z-index: 6;
+        max-width: 16rem;
+        padding: 0.7rem 0.85rem;
+        border-radius: 12px;
+        background: rgba(8, 12, 14, 0.92);
+        border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+        opacity: 0;
+        transform: translateY(-8px);
         pointer-events: none;
+        transition: opacity 0.25s ease, transform 0.25s var(--ease);
+      }
+      .sim-toast.is-on {
+        opacity: 1;
+        transform: none;
+      }
+      .sim-toast strong {
+        display: block;
+        font-size: 0.85rem;
+        margin-bottom: 0.15rem;
+      }
+      .sim-toast span {
+        font-size: 0.75rem;
+        color: var(--muted);
+      }
+
+      /* Faux explorateur */
+      .sim-picker {
+        max-width: 28rem;
+        margin: 0 auto;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.03);
+        overflow: hidden;
+      }
+      .sim-picker-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.55rem 0.75rem;
+        border-bottom: 1px solid var(--line);
+        background: rgba(0, 0, 0, 0.35);
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        color: var(--muted);
+      }
+      .sim-picker-bar i {
+        width: 0.55rem;
+        height: 0.55rem;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+      }
+      .sim-picker-bar i:first-child {
+        background: #ff6b6b;
+      }
+      .sim-picker-path {
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: var(--ink);
+      }
+      .sim-tree {
+        list-style: none;
+        margin: 0;
+        padding: 0.45rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        max-height: 14rem;
+        overflow: auto;
+      }
+      .sim-tree button {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        padding: 0.55rem 0.65rem;
+        border: 1px solid transparent;
+        border-radius: 10px;
+        background: transparent;
+        color: var(--ink);
+        font: inherit;
+        font-size: 0.9rem;
+        text-align: left;
+        cursor: pointer;
+        transition: background 0.15s ease, border-color 0.15s ease;
+      }
+      .sim-tree button:hover {
+        background: rgba(125, 255, 212, 0.06);
+        border-color: rgba(125, 255, 212, 0.18);
+      }
+      .sim-tree button.is-sel {
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+        border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+        box-shadow: inset 2px 0 0 var(--accent);
+      }
+      .sim-tree .fold {
+        width: 1.35rem;
+        height: 1.1rem;
+        border-radius: 3px 3px 2px 2px;
+        background: linear-gradient(180deg, var(--gold), color-mix(in srgb, var(--gold) 55%, #000));
+        flex-shrink: 0;
+        opacity: 0.9;
+      }
+      .sim-tree .depth-1 {
+        padding-left: 1.4rem;
+      }
+      .sim-tree .depth-2 {
+        padding-left: 2.5rem;
+      }
+      .sim-picker-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.55rem;
+        padding: 0.75rem;
+        border-top: 1px solid var(--line);
+      }
+      .sim-btn {
+        appearance: none;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--ink);
+        font: inherit;
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 0.6rem 1rem;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: border-color 0.15s ease, background 0.15s ease;
+      }
+      .sim-btn:hover {
+        border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+      }
+      .sim-btn-primary {
+        background: var(--accent);
+        color: var(--accent-ink);
+        border-color: transparent;
+      }
+      .sim-btn-primary:hover {
+        background: #a8ffe4;
+      }
+      .sim-btn-primary:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      /* Scan AnalysisFeed-like */
+      .sim-scan {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 1.15rem 1.35rem;
+        align-items: center;
+      }
+      @media (max-width: 640px) {
+        .sim-scan {
+          grid-template-columns: 1fr;
+          justify-items: center;
+          text-align: center;
+        }
+      }
+      .sim-radar {
+        --radar: #7dffd4;
+        position: relative;
+        width: 132px;
+        height: 132px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background:
+          radial-gradient(circle at center, rgba(125, 255, 212, 0.12) 0 8%, transparent 9%),
+          repeating-radial-gradient(
+            circle at center,
+            transparent 0 16px,
+            rgba(125, 255, 212, 0.08) 16px 17px
+          ),
+          #050807;
+        box-shadow:
+          inset 0 0 28px rgba(0, 0, 0, 0.65),
+          0 0 28px rgba(125, 255, 212, 0.12);
+        border: 1px solid rgba(125, 255, 212, 0.28);
+        overflow: hidden;
+      }
+      .sim-radar-ring {
+        position: absolute;
+        inset: 18%;
+        border-radius: 50%;
+        border: 1px solid rgba(125, 255, 212, 0.18);
+        animation: simRipple 2.4s linear infinite;
+      }
+      .sim-radar-ring.r2 {
+        inset: 8%;
+        animation-delay: 1.2s;
+      }
+      .sim-radar-sweep {
+        position: absolute;
+        inset: 0;
+        background: conic-gradient(
+          from 0deg,
+          transparent 0 68%,
+          rgba(125, 255, 212, 0.04) 78%,
+          rgba(125, 255, 212, 0.55) 92%,
+          rgba(125, 255, 212, 0.9) 100%
+        );
+        animation: simSweep 2.2s linear infinite;
+        mix-blend-mode: screen;
+      }
+      .sim-radar-core {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--radar);
+        box-shadow: 0 0 14px rgba(125, 255, 212, 0.8);
+      }
+      @keyframes simRipple {
+        from {
+          transform: scale(0.85);
+          opacity: 0.9;
+        }
+        to {
+          transform: scale(1.15);
+          opacity: 0;
+        }
+      }
+      @keyframes simSweep {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .sim-scan-copy {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .sim-scan-copy .eyebrow {
+        margin: 0;
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+      .sim-scan-copy h3 {
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: 1.35rem;
+        letter-spacing: -0.03em;
+      }
+      .sim-scan-copy .sub {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.45;
+        max-width: none;
+      }
+      .sim-term {
+        border-radius: 12px;
+        border: 1px solid rgba(125, 255, 212, 0.18);
+        background: rgba(0, 0, 0, 0.45);
+        overflow: hidden;
+        text-align: left;
+      }
+      .sim-term-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.4rem 0.65rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        font-family: var(--font-mono);
+        font-size: 0.68rem;
+        color: var(--muted);
+      }
+      .sim-term-bar i {
+        width: 0.45rem;
+        height: 0.45rem;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.25);
+      }
+      .sim-term-body {
+        padding: 0.65rem 0.75rem 0.75rem;
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+        line-height: 1.45;
+      }
+      .sim-term-line {
+        margin: 0;
+        color: var(--ink);
+      }
+      .sim-term-line .prompt {
+        color: var(--accent);
+        margin-right: 0.35rem;
+      }
+      .sim-term-detail {
+        margin: 0.35rem 0 0;
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .sim-bar {
+        height: 0.55rem;
+        border-radius: 99px;
+        background: rgba(255, 255, 255, 0.06);
+        overflow: hidden;
+      }
+      .sim-bar-fill {
+        height: 100%;
+        width: 0%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 40%, transparent);
+        transition: width 0.2s linear;
+      }
+      .sim-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.75rem;
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: var(--muted);
+      }
+      .sim-meta strong {
+        color: var(--accent);
+        font-weight: 500;
+      }
+
+      /* Plan workbench */
+      .sim-plan-top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.85rem;
+      }
+      .sim-kpi {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+      }
+      .sim-ring {
+        --p: 87;
+        width: 3.2rem;
+        height: 3.2rem;
+        border-radius: 50%;
+        background: conic-gradient(
+          var(--accent) calc(var(--p) * 1%),
+          rgba(255, 255, 255, 0.08) 0
+        );
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+      }
+      .sim-ring span {
+        width: 2.35rem;
+        height: 2.35rem;
+        border-radius: 50%;
+        background: #050807;
+        display: grid;
+        place-items: center;
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        color: var(--accent);
+      }
+      .sim-kpi div b {
+        display: block;
+        font-family: var(--font-display);
+        font-size: 1.05rem;
+        letter-spacing: -0.02em;
+      }
+      .sim-kpi div span {
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+      .sim-path {
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        color: var(--muted);
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .sim-workspace {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        min-height: 240px;
+      }
+      @media (min-width: 760px) {
+        .sim-workspace {
+          grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
+        }
+      }
+      .sim-folders,
+      .sim-detail {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.025);
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .sim-pane-label {
+        padding: 0.55rem 0.75rem;
+        border-bottom: 1px solid var(--line);
+        font-family: var(--font-mono);
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .sim-folder-list {
+        list-style: none;
+        margin: 0;
+        padding: 0.45rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        overflow: auto;
+        flex: 1;
+        max-height: 260px;
+      }
+      .sim-folder {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        padding: 0.6rem 0.65rem;
+        border: 1px solid transparent;
+        border-radius: 11px;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s var(--ease);
+      }
+      .sim-folder:hover {
+        background: rgba(138, 180, 255, 0.08);
+        border-color: rgba(138, 180, 255, 0.22);
+        transform: translateX(2px);
+      }
+      .sim-folder.is-active {
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+        border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+        box-shadow: inset 2px 0 0 var(--accent);
+      }
+      .sim-folder.is-warn {
+        border-color: color-mix(in srgb, var(--gold) 30%, transparent);
+      }
+      .sim-folder.is-warn .sim-folder-name {
+        color: var(--gold);
+      }
+      .sim-folder-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.5rem;
+        align-items: baseline;
+      }
+      .sim-folder-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+      .sim-folder-count {
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        color: var(--accent);
+      }
+      .sim-folder-fill {
+        height: 0.35rem;
+        border-radius: 99px;
+        background: rgba(255, 255, 255, 0.06);
+        overflow: hidden;
+      }
+      .sim-folder-fill i {
+        display: block;
+        height: 100%;
+        width: var(--w, 40%);
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      }
+      .sim-tracks {
+        list-style: none;
+        margin: 0;
+        padding: 0.45rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        overflow: auto;
+        flex: 1;
+        max-height: 260px;
+      }
+      .sim-track {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.5rem 0.75rem;
+        align-items: center;
+        padding: 0.55rem 0.65rem;
+        border-radius: 10px;
+        border: 1px solid transparent;
+      }
+      .sim-track:hover {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.06);
+      }
+      .sim-track b {
+        display: block;
+        font-size: 0.88rem;
+        font-weight: 600;
+      }
+      .sim-track span {
+        font-size: 0.75rem;
+        color: var(--muted);
+      }
+      .sim-track time {
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        color: var(--muted);
+      }
+      .sim-plan-cta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+        align-items: center;
+        margin-top: 1rem;
+        padding-top: 0.85rem;
+        border-top: 1px solid var(--line);
+      }
+      .sim-plan-cta .linkish {
+        background: none;
+        border: none;
+        color: var(--accent);
+        font: inherit;
+        font-size: 0.9rem;
+        cursor: pointer;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        padding: 0.4rem 0.2rem;
+      }
+      .sim-track.is-playable {
+        cursor: pointer;
+      }
+      .sim-track.is-playable:hover {
+        border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+        background: color-mix(in srgb, var(--accent) 8%, transparent);
+      }
+      .sim-track .play-hint {
+        font-family: var(--font-mono);
+        font-size: 0.65rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--accent);
+        opacity: 0.85;
+      }
+      .sim-clips-note {
+        margin: 0.75rem 0 0;
+        font-size: 0.85rem;
+        color: var(--muted);
+        max-width: none;
+      }
+      .sim-clips-note strong {
+        color: var(--accent);
+      }
+
+      /* —— Preview Live (calqué app) —— */
+      .player-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 90;
+        display: none;
+        place-items: end center;
+        padding: 1.2rem;
+      }
+      .player-overlay.is-on {
+        display: grid;
+      }
+      .player-backdrop {
+        position: absolute;
+        inset: 0;
+        border: 0;
+        background: rgba(0, 0, 0, 0.62);
+        backdrop-filter: blur(10px);
+        cursor: pointer;
+        animation: fadeIn 0.25s ease both;
+      }
+      .player-sheet {
+        position: relative;
+        z-index: 1;
+        width: min(820px, 100%);
+        overflow: hidden;
+        padding: 1.15rem 1.2rem 1.25rem;
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: #050505;
+        box-shadow: 0 -24px 80px rgba(0, 0, 0, 0.55);
+        animation: drawerIn 0.45s var(--ease) both;
+        isolation: isolate;
+      }
+      .player-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+      .player-top .eyebrow {
+        margin: 0;
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--gold);
+      }
+      .player-close {
+        appearance: none;
+        border: 1px solid var(--line);
+        background: rgba(0, 0, 0, 0.5);
+        color: var(--ink);
+        font: inherit;
+        font-size: 0.85rem;
+        font-weight: 600;
+        padding: 0.45rem 0.95rem;
+        border-radius: 999px;
+        cursor: pointer;
+      }
+      .player-close:hover {
+        border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+      }
+      .player-main {
+        display: grid;
+        grid-template-columns: 168px minmax(0, 1fr);
+        gap: 1.15rem;
+      }
+      .player-cover {
+        width: 168px;
+        height: 168px;
+        overflow: hidden;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        background: rgba(125, 255, 212, 0.06);
+      }
+      .player-eq {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 4px;
+        height: 100%;
+        padding: 1.2rem;
+      }
+      .player-eq span {
+        width: 6px;
+        height: 18%;
+        border-radius: 99px;
+        background: linear-gradient(var(--gold), var(--accent));
+      }
+      .player-eq span.is-on {
+        animation: playerEq 0.7s ease-in-out infinite;
+      }
+      .player-info h3 {
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: 1.55rem;
+        letter-spacing: -0.03em;
+      }
+      .player-kicker {
+        margin: 0 0 0.25rem;
+        color: var(--gold);
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+      .player-artist {
+        margin: 0.3rem 0 0.8rem;
+        color: var(--accent-2);
+        font-weight: 600;
+      }
+      .player-error {
+        margin: 0 0 0.6rem;
+        color: #ff8e8e;
+        font-size: 0.85rem;
+      }
+      .player-meta {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.55rem;
+        margin: 0;
+      }
+      .player-meta dt {
+        color: var(--muted);
+        font-size: 0.64rem;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+      .player-meta dd {
+        margin: 0.1rem 0 0;
+        font-size: 0.84rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: var(--ink);
+      }
+      .player-meta-wide {
+        grid-column: 1 / -1;
+      }
+      .player-transport {
+        margin-top: 1.1rem;
+      }
+      .player-seek,
+      .player-vol {
+        width: 100%;
+        appearance: none;
+        height: 6px;
+        border-radius: 99px;
+        outline: none;
+        cursor: pointer;
+      }
+      .player-seek {
+        background: linear-gradient(
+          90deg,
+          var(--accent) 0 var(--p, 0%),
+          rgba(255, 255, 255, 0.08) var(--p, 0%)
+        );
+      }
+      .player-vol {
+        flex: 1;
+        background: linear-gradient(
+          90deg,
+          var(--gold) 0 var(--p, 0%),
+          rgba(255, 255, 255, 0.08) var(--p, 0%)
+        );
+      }
+      .player-seek::-webkit-slider-thumb,
+      .player-vol::-webkit-slider-thumb {
+        appearance: none;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+      }
+      .player-seek::-webkit-slider-thumb {
+        background: var(--gold);
+        box-shadow: 0 0 12px var(--gold);
+      }
+      .player-vol::-webkit-slider-thumb {
+        background: #f4efe4;
+        box-shadow: 0 0 10px rgba(244, 239, 228, 0.45);
+      }
+      .player-times {
+        display: flex;
+        justify-content: space-between;
+        margin: 0.35rem 0 0.55rem;
+        color: var(--muted);
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+      }
+      .player-volume {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        margin: 0 0 0.85rem;
+      }
+      .player-mute {
+        flex: 0 0 auto;
+        min-width: 4.4rem;
+        appearance: none;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--ink);
+        font: inherit;
+        font-size: 0.85rem;
+        font-weight: 600;
+        padding: 0.45rem 0.85rem;
+        border-radius: 999px;
+        cursor: pointer;
+      }
+      .player-vol-pct {
+        flex: 0 0 2.6rem;
+        text-align: right;
+        color: var(--muted);
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+      }
+      .player-controls {
+        display: flex;
+        justify-content: center;
+        gap: 0.55rem;
+      }
+      .player-controls button {
+        appearance: none;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--ink);
+        font: inherit;
+        font-size: 0.88rem;
+        font-weight: 600;
+        padding: 0.55rem 1.05rem;
+        border-radius: 999px;
+        cursor: pointer;
+      }
+      .player-controls button:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+      .player-play {
+        min-width: 7.2rem;
+        border-color: color-mix(in srgb, var(--accent) 55%, transparent) !important;
+        color: var(--accent) !important;
+        box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 25%, transparent);
+      }
+      .player-hint {
+        margin: 0.7rem 0 0;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.75rem;
+        max-width: none;
+      }
+      @keyframes playerEq {
+        0%,
+        100% {
+          height: 18%;
+        }
+        50% {
+          height: 78%;
+        }
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes drawerIn {
+        from {
+          opacity: 0;
+          transform: translateY(28px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      @media (max-width: 720px) {
+        .player-main {
+          grid-template-columns: 1fr;
+        }
+        .player-cover {
+          width: 100%;
+          height: 160px;
+        }
+        .player-meta {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .sim-radar-ring,
+        .sim-radar-sweep,
+        .sim-idle .sim-eq i,
+        .player-eq span.is-on {
+          animation: none !important;
+        }
       }
 
       .rail-mock {
@@ -571,7 +1673,7 @@
         gap: 0.45rem;
         padding: 0.55rem 0.85rem;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.04);
+        background: rgba(0, 0, 0, 0.4);
         border: 1px solid var(--line);
         font-size: 0.88rem;
         color: var(--muted);
@@ -614,9 +1716,10 @@
         color: var(--muted);
         font-size: 0.9rem;
         background: rgba(0, 0, 0, 0.55);
+        scroll-snap-align: end;
       }
       footer.site .inner {
-        width: min(54rem, 100%);
+        width: min(56rem, 100%);
         margin: 0 auto;
         display: flex;
         flex-wrap: wrap;
@@ -626,11 +1729,6 @@
       footer.site a {
         color: var(--accent);
         text-decoration: none;
-      }
-      footer.site code {
-        font-family: var(--font-mono);
-        font-size: 0.82em;
-        color: var(--accent);
       }
 
       .scroll-progress {
@@ -646,18 +1744,15 @@
       }
 
       @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-snap-type: none;
+        }
         .atmos-orb,
         .eq-fixed i,
         .spin-border,
-        .hero,
-        .reveal {
+        .hero {
           animation: none !important;
           transition: none !important;
-          opacity: 1 !important;
-          transform: none !important;
-        }
-        .chips-layer {
-          display: none;
         }
       }
     </style>
@@ -673,16 +1768,96 @@
       <div class="atmos-orb c"></div>
     </div>
     <div class="eq-fixed" id="eq" aria-hidden="true"></div>
-    <div class="chips-layer" id="chips" aria-hidden="false"></div>
+
+    <!-- Décor : fragments UI de l’app -->
+    <div class="float-ui" aria-hidden="true">
+      <div class="fu-rail" data-drift data-amp="6" data-spd="0.28" style="left: 2.5%; top: 16%">
+        <div class="fu-logo"></div>
+        <div class="fu-nav is-on"></div>
+        <div class="fu-nav"></div>
+        <div class="fu-nav"></div>
+        <div class="fu-nav"></div>
+      </div>
+      <span class="fu-chip" data-drift data-amp="10" data-spd="0.4" style="right: 8%; top: 14%">Rock</span>
+      <span
+        class="fu-chip t-gold"
+        data-drift
+        data-amp="12"
+        data-spd="0.32"
+        style="right: 18%; top: 28%"
+        >Jazz</span
+      >
+      <span
+        class="fu-chip t-spot"
+        data-drift
+        data-amp="9"
+        data-spd="0.45"
+        style="left: 12%; bottom: 28%"
+        >Hip-Hop</span
+      >
+      <span
+        class="fu-chip t-blue"
+        data-drift
+        data-amp="11"
+        data-spd="0.36"
+        style="right: 6%; bottom: 36%"
+        >Électro</span
+      >
+      <div
+        class="fu-push"
+        data-drift
+        data-amp="7"
+        data-spd="0.3"
+        style="right: 5%; top: 42%; --w: 78%"
+      >
+        <div class="fu-push-label"><span>Scan local</span><b>78%</b></div>
+        <div class="fu-push-track"><div class="fu-push-fill"></div></div>
+      </div>
+      <div
+        class="fu-push"
+        data-drift
+        data-amp="8"
+        data-spd="0.38"
+        style="left: 10%; top: 48%; --w: 44%"
+      >
+        <div class="fu-push-label"><span>Spotify import</span><b>44%</b></div>
+        <div class="fu-push-track">
+          <div class="fu-push-fill" style="background: linear-gradient(90deg, var(--spotify), var(--accent))"></div>
+        </div>
+      </div>
+      <div class="fu-toast" data-drift data-amp="6" data-spd="0.25" style="right: 10%; bottom: 22%">
+        <strong>12 titres → Jazz</strong>
+        <span>Corrigé · prêt à déplacer</span>
+      </div>
+      <div class="fu-card" data-drift data-amp="9" data-spd="0.33" style="left: 22%; top: 20%">
+        <i></i>
+        <div>
+          <b>Night Bus</b>
+          <span>suggéré · Électro</span>
+        </div>
+      </div>
+      <div class="fu-folder" data-drift data-amp="7" data-spd="0.29" style="right: 22%; top: 58%">
+        <em>Dossier</em>
+        <strong>Rock</strong>
+      </div>
+      <div class="fu-folder" data-drift data-amp="8" data-spd="0.34" style="left: 28%; bottom: 24%">
+        <em>Dossier</em>
+        <strong>Soul</strong>
+      </div>
+    </div>
 
     <div class="content">
       <header class="stage">
         <div class="hero">
           <p class="brand">Bass<span>Order</span></p>
-          <h1 class="tag">Trie ta musique par genre</h1>
+          <h1 class="tag">Trie playlists &amp; fichiers par genre musical</h1>
           <p class="lead">
-            L’ambiance de l’app, dans le navigateur : Spotify et fichiers locaux,
-            dictionnaire de genres, classement — sans dashboard inutile.
+            <strong style="color: var(--ink)">BassOrder</strong> est une app
+            desktop Windows (Mac bientôt) qui
+            <strong style="color: var(--ink)">classe ta musique par genre</strong>
+            : likes / playlists Spotify et bibliothèque locale → dossiers Rock,
+            Jazz, Hip-Hop, Électro… Tu corriges au besoin, puis tu copies ou
+            déplaces.
           </p>
           <div class="cta">
             <a
@@ -690,7 +1865,7 @@
               href="/downloads/BassOrder_0.1.0_x64_en-US.msi"
               >Télécharger pour Windows</a
             >
-            <a class="btn btn-ghost mag" href="#comment">Comment ça marche</a>
+            <a class="btn btn-ghost mag" href="#demo">Essayer le scan</a>
           </div>
           <p class="fine">
             Aussi en
@@ -700,19 +1875,19 @@
             ·
             <a href="https://github.com/EliotGIRAUD/BassOrder">code source</a>
           </p>
-          <p class="fine" style="opacity: 0.75">
-            Astuce : attrape les pastilles de genre — flingue-les comme dans l’app.
-          </p>
         </div>
       </header>
 
       <section class="block" id="comment">
         <div class="block-inner reveal">
-          <p class="kicker">Parcours</p>
-          <h2>De l’install au premier classement</h2>
+          <p class="kicker">À quoi ça sert</p>
+          <h2>Une app pour ranger ta musique par genre</h2>
           <p>
-            Un seul espace sur ta machine. Tu lances, tu te nommes une fois, puis
-            Spotify (recommandé) — ou un dossier dès le jour 1.
+            Objectif clair : prendre une
+            <strong>playlist Spotify</strong> (ou un dossier de fichiers) et la
+            <strong>trier automatiquement par genres musicaux</strong> — pas un
+            réseau social, pas un player. BassOrder détecte / propose le genre,
+            tu valides, puis l’app organise.
           </p>
           <div class="fx-frame">
             <span class="spin-border" aria-hidden="true"></span>
@@ -722,30 +1897,30 @@
                 <div>
                   <h3>Installe &amp; allume</h3>
                   <p>
-                    Au premier lancement : un pseudo, une couleur. C’est ton
-                    espace — plus de liste de profils.
+                    Un seul espace sur ta machine (pseudo + couleur). Pas de
+                    multi-profils Netflix.
                   </p>
                 </div>
               </li>
               <li>
                 <span class="n">02</span>
                 <div>
-                  <h3>Connecte Spotify</h3>
+                  <h3>Connecte Spotify (recommandé)</h3>
                   <p>
-                    OAuth + likes → genres parent / sous-genre. Ton
-                    <strong>dictionnaire</strong> grossit ; le pool cloud
-                    (optionnel) aussi.
+                    Importe tes likes / artistes. BassOrder construit un
+                    <strong>dictionnaire de genres</strong> pour classer plus
+                    juste ensuite.
                   </p>
                 </div>
               </li>
               <li>
                 <span class="n">03</span>
                 <div>
-                  <h3>Scanne tes fichiers</h3>
+                  <h3>Trie playlists &amp; fichiers</h3>
                   <p>
-                    Tags lus, suggestions, corrections, puis
-                    <strong>copie ou déplacement</strong> en dossiers Rock,
-                    Jazz…
+                    Suggestions de genres → correction →
+                    <strong>copie ou déplacement</strong> dans des dossiers par
+                    genre.
                   </p>
                 </div>
               </li>
@@ -754,8 +1929,8 @@
                 <div>
                   <h3>Cloud optionnel</h3>
                   <p>
-                    Miroir privé + pool collectif. Les fichiers restent sur ton
-                    PC.
+                    Sync knowledge (miroir + pool). Tes fichiers audio restent
+                    sur ton PC.
                   </p>
                 </div>
               </li>
@@ -770,57 +1945,228 @@
         </div>
       </section>
 
-      <section class="block">
+      <section class="block" id="demo">
         <div class="block-inner reveal">
-          <p class="kicker">Terrain</p>
-          <h2>Constellation interactive</h2>
+          <p class="kicker">Essaie ici</p>
+          <h2>Simule un scan local</h2>
           <p>
-            Comme le playground orbital de l’app : attrape un nœud, lance-le,
-            la gravité le ramène. Les labels suivent le vocabulaire BassOrder.
+            Le vrai geste BassOrder : choisir un dossier → lire les fichiers →
+            plan de dossiers par <strong>genre</strong>. Rien n’est écrit sur
+            le disque tant que tu n’confirmes pas dans l’app.
           </p>
-          <div class="orbit-wrap" id="orbit">
-            <canvas id="orbitCanvas"></canvas>
-            <span class="orbit-hint">Drag · fling · collide</span>
+          <div class="sim" id="simLocal">
+            <div class="sim-head">
+              <span>Mes fichiers · <strong>démo</strong></span>
+              <span id="simStatus">Prêt</span>
+            </div>
+            <div class="sim-stage">
+              <div class="sim-toast" id="simToast" aria-live="polite">
+                <strong id="simToastTitle"></strong>
+                <span id="simToastBody"></span>
+              </div>
+
+              <div class="sim-panel is-on" data-step="idle" id="simIdle">
+                <div class="sim-idle">
+                  <div class="sim-eq" aria-hidden="true">
+                    <i style="--h: 0.4"></i><i style="--h: 0.7"></i
+                    ><i style="--h: 0.55"></i><i style="--h: 0.9"></i
+                    ><i style="--h: 0.35"></i><i style="--h: 0.75"></i
+                    ><i style="--h: 0.5"></i>
+                  </div>
+                  <h3>Module fichiers locaux</h3>
+                  <p>
+                    Comme dans l’app : tu pointes un dossier de musique, BassOrder
+                    analyse les tags et propose un plan Rock / Jazz / Hip-Hop…
+                  </p>
+                  <button type="button" class="btn btn-primary" id="simOpenPicker">
+                    Choisir un dossier de musique
+                  </button>
+                </div>
+              </div>
+
+              <div class="sim-panel" data-step="picker" id="simPicker">
+                <div class="sim-picker" role="dialog" aria-label="Choisir un dossier">
+                  <div class="sim-picker-bar">
+                    <i></i><i></i><i></i>
+                    <span class="sim-picker-path" id="simPickerPath">Ce PC\Utilisateurs\Alex</span>
+                  </div>
+                  <ul class="sim-tree" id="simTree">
+                    <li>
+                      <button type="button" class="depth-0" data-path="C:\Users\Alex" data-nav="1">
+                        <span class="fold" aria-hidden="true"></span> Alex
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        class="depth-1"
+                        data-path="C:\Users\Alex\Music"
+                        data-folder="1"
+                      >
+                        <span class="fold" aria-hidden="true"></span> Music
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        class="depth-1"
+                        data-path="C:\Users\Alex\Downloads"
+                        data-nav="1"
+                      >
+                        <span class="fold" aria-hidden="true"></span> Downloads
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        class="depth-2"
+                        data-path="C:\Users\Alex\Downloads\Music"
+                        data-folder="1"
+                      >
+                        <span class="fold" aria-hidden="true"></span> Music
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        class="depth-1"
+                        data-path="C:\Users\Alex\Documents"
+                        data-nav="1"
+                      >
+                        <span class="fold" aria-hidden="true"></span> Documents
+                      </button>
+                    </li>
+                  </ul>
+                  <div class="sim-picker-actions">
+                    <button type="button" class="sim-btn" id="simPickerCancel">Annuler</button>
+                    <button type="button" class="sim-btn sim-btn-primary" id="simPickerOk" disabled>
+                      Ouvrir
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="sim-panel" data-step="scan" id="simScan">
+                <div class="sim-scan">
+                  <div class="sim-radar" aria-hidden="true">
+                    <span class="sim-radar-ring"></span>
+                    <span class="sim-radar-ring r2"></span>
+                    <span class="sim-radar-sweep"></span>
+                    <span class="sim-radar-core"></span>
+                  </div>
+                  <div class="sim-scan-copy">
+                    <p class="eyebrow">Scan disque</p>
+                    <h3>Analyse en cours</h3>
+                    <p class="sub">
+                      Rien n’est écrit sur le disque — on lit seulement les
+                      métadonnées.
+                    </p>
+                    <div class="sim-term">
+                      <div class="sim-term-bar"><i></i><i></i><i></i><span>scan.sh</span></div>
+                      <div class="sim-term-body">
+                        <p class="sim-term-line">
+                          <span class="prompt">&gt;</span
+                          ><span id="simTermLine">On ouvre ton dossier…</span>
+                        </p>
+                        <p class="sim-term-detail" id="simTermFile"></p>
+                      </div>
+                    </div>
+                    <div
+                      class="sim-bar"
+                      role="progressbar"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                      id="simProgress"
+                    >
+                      <div class="sim-bar-fill" id="simBarFill"></div>
+                    </div>
+                    <div class="sim-meta">
+                      <strong id="simPercent">0%</strong>
+                      <span id="simCount">0 / 16 titres</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="sim-panel" data-step="plan" id="simPlan">
+                <div class="sim-plan-top">
+                  <div class="sim-kpi">
+                    <div class="sim-ring" id="simRing" style="--p: 87">
+                      <span id="simRingPct">87%</span>
+                    </div>
+                    <div>
+                      <b>Plan de dossiers</b>
+                      <span id="simPlanSummary">14 classés · 2 sans genre</span>
+                    </div>
+                  </div>
+                  <p class="sim-path" id="simRootPath">C:\Users\Alex\Music</p>
+                </div>
+                <div class="sim-workspace">
+                  <div class="sim-folders">
+                    <div class="sim-pane-label">Dossiers</div>
+                    <ul class="sim-folder-list" id="simFolders"></ul>
+                  </div>
+                  <div class="sim-detail">
+                    <div class="sim-pane-label" id="simDetailLabel">Titres</div>
+                    <ul class="sim-tracks" id="simTracks"></ul>
+                  </div>
+                </div>
+                <div class="sim-plan-cta">
+                  <a
+                    class="btn btn-primary mag"
+                    href="/downloads/BassOrder_0.1.0_x64_en-US.msi"
+                    >Télécharger pour Windows</a
+                  >
+                  <button type="button" class="linkish" id="simReplay">Rejouer la démo</button>
+                </div>
+                <p class="sim-clips-note" id="simClipsNote" hidden>
+                  Clique un titre marqué <strong>écouter</strong> pour ouvrir la Preview Live.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section class="block">
+      <section class="block" id="engines">
         <div class="block-inner reveal">
           <p class="kicker">Deux moteurs</p>
-          <div class="split">
+          <h2>Spotify et fichiers, même logique</h2>
+          <div class="split" style="margin-top: 1.5rem">
             <article class="panel">
               <span class="spin-border" aria-hidden="true"></span>
               <p class="kicker">Spotify</p>
-              <h3 class="panel-title">Le dictionnaire grossit avec toi</h3>
+              <h3 class="panel-title">Playlists Spotify → genres</h3>
               <p>
-                Chaque artiste classé devient réutilisable. Au prochain MP3 du
-                même artiste, BassOrder a déjà une piste — moins de « Sans
-                genre ».
+                Importe likes / artistes, construis ton dictionnaire, puis trie
+                pour ranger ta musique Spotify par genre musical — réutilisable
+                sur tes MP3 ensuite.
               </p>
             </article>
             <article class="panel">
               <span class="spin-border" aria-hidden="true"></span>
               <p class="kicker">Local</p>
-              <h3 class="panel-title">Visible dès le jour 1</h3>
+              <h3 class="panel-title">Fichiers → dossiers par genre</h3>
               <p>
-                Scanne un dossier tout de suite, regarde l’évolution des
-                détections, puis branche Spotify pour accélérer les tris
-                suivants.
+                Scanne un dossier, corrige les suggestions, puis copie ou
+                déplace vers Rock, Jazz, Hip-Hop… dès le jour 1, même sans
+                Spotify.
               </p>
             </article>
           </div>
         </div>
       </section>
 
-      <section class="block">
+      <section class="block" id="download">
         <div class="block-inner reveal">
           <p class="kicker">Ambiance</p>
-          <h2>Faite pour classer, pas administrer</h2>
+          <h2>Faite pour classer des playlists, pas pour administrer</h2>
           <p>
-            Rail Spotify / fichiers, historique, dictionnaire, sync knowledge.
-            Un utilisateur, un flux clair —
-            <strong>Spotify d’abord</strong>, fichiers toujours à portée.
+            BassOrder = trier ta musique
+            <strong>par genres musicaux</strong> (Spotify + local), historique,
+            dictionnaire, sync knowledge optionnelle. Un utilisateur, un flux
+            clair — <strong>Spotify d’abord</strong>, fichiers toujours à
+            portée.
           </p>
           <div class="cta" style="margin-top: 1.75rem">
             <a
@@ -839,340 +2185,75 @@
 
       <footer class="site">
         <div class="inner">
-          <span>BassOrder · Eliot GIRAUD</span>
+          <span>BassOrder · Eliot GIRAUD · MIT</span>
           <span>
-            API <code>api.bassorder.smegg.cloud</code> ·
+            <a href="/privacy.html">Confidentialité</a>
+            ·
+            <a href="/terms.html">Conditions</a>
+            ·
+            <a href="/mentions.html">Mentions</a>
+            ·
             <a href="https://github.com/EliotGIRAUD/BassOrder">GitHub</a>
           </span>
         </div>
       </footer>
     </div>
 
-    <script>
-      (() => {
-        const root = document.documentElement;
-        const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    </div>
 
-        /* EQ bars */
-        const eq = document.getElementById("eq");
-        if (eq) {
-          for (let i = 0; i < 36; i++) {
-            const bar = document.createElement("i");
-            bar.style.setProperty("--h", String(0.2 + Math.random() * 0.8));
-            bar.style.setProperty("--d", String(Math.random()));
-            eq.appendChild(bar);
-          }
-        }
+    <div class="player-overlay" id="playerOverlay" role="dialog" aria-modal="true" aria-label="Preview piste">
+      <button type="button" class="player-backdrop" id="playerBackdrop" aria-label="Fermer"></button>
+      <div class="player-sheet">
+        <span class="spin-border" aria-hidden="true"></span>
+        <header class="player-top">
+          <p class="eyebrow">Preview live</p>
+          <button type="button" class="player-close" id="playerClose">Fermer</button>
+        </header>
+        <div class="player-main">
+          <div class="player-cover">
+            <div class="player-eq" id="playerEq" aria-hidden="true"></div>
+          </div>
+          <div class="player-info">
+            <p class="player-kicker" id="playerFolder">—</p>
+            <h3 id="playerTitle">—</h3>
+            <p class="player-artist" id="playerArtist">—</p>
+            <p class="player-error" id="playerError" hidden></p>
+            <dl class="player-meta">
+              <div><dt>Album</dt><dd id="playerAlbum">—</dd></div>
+              <div><dt>Année</dt><dd id="playerYear">—</dd></div>
+              <div><dt>Genre</dt><dd id="playerGenre">—</dd></div>
+              <div><dt>BPM</dt><dd id="playerBpm">—</dd></div>
+              <div><dt>Clé</dt><dd id="playerKey">—</dd></div>
+              <div><dt>Bitrate</dt><dd id="playerBitrate">—</dd></div>
+              <div><dt>Durée</dt><dd id="playerDurMeta">—</dd></div>
+              <div class="player-meta-wide"><dt>Piste</dt><dd id="playerFile">—</dd></div>
+              <div class="player-meta-wide"><dt>Chemin</dt><dd id="playerPath">—</dd></div>
+            </dl>
+          </div>
+        </div>
+        <div class="player-transport">
+          <input type="range" class="player-seek" id="playerSeek" min="0" max="1" step="0.1" value="0" aria-label="Position" />
+          <div class="player-times">
+            <span id="playerTimeCur">0:00</span>
+            <span id="playerTimeDur">0:00</span>
+          </div>
+          <div class="player-volume">
+            <button type="button" class="player-mute" id="playerMute">Son</button>
+            <input type="range" class="player-vol" id="playerVol" min="0" max="1" step="0.01" value="0.8" aria-label="Volume" />
+            <span class="player-vol-pct" id="playerVolPct">80%</span>
+          </div>
+          <div class="player-controls">
+            <button type="button" id="playerPrev">← Préc.</button>
+            <button type="button" class="player-play" id="playerPlay">Play</button>
+            <button type="button" id="playerNext">Suiv. →</button>
+          </div>
+          <p class="player-hint">
+            Espace : play/pause · ↑ ↓ : volume · M : muet · Shift + ← → : pistes · Esc : fermer
+          </p>
+        </div>
+      </div>
+    </div>
 
-        /* Scroll mood + pointer spotlight */
-        function onScroll() {
-          const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-          const mood = Math.min(1, Math.max(0, window.scrollY / max));
-          root.style.setProperty("--mood", mood.toFixed(4));
-          if (eq) {
-            const boost = 0.85 + mood * 0.5;
-            eq.querySelectorAll("i").forEach((el, i) => {
-              const base = 0.25 + ((i * 37) % 70) / 100;
-              el.style.setProperty("--h", String(Math.min(1, base * boost)));
-            });
-          }
-        }
-        window.addEventListener("scroll", onScroll, { passive: true });
-        onScroll();
-
-        window.addEventListener(
-          "pointermove",
-          (e) => {
-            root.style.setProperty("--cx", (e.clientX / window.innerWidth) * 100 + "%");
-            root.style.setProperty("--cy", (e.clientY / window.innerHeight) * 100 + "%");
-          },
-          { passive: true },
-        );
-
-        /* Magnetic buttons */
-        document.querySelectorAll(".mag").forEach((btn) => {
-          btn.addEventListener("pointermove", (e) => {
-            if (reduce) return;
-            const r = btn.getBoundingClientRect();
-            const x = e.clientX - (r.left + r.width / 2);
-            const y = e.clientY - (r.top + r.height / 2);
-            btn.style.setProperty("--mx", x * 0.12 + "px");
-            btn.style.setProperty("--my", y * 0.18 + "px");
-          });
-          btn.addEventListener("pointerleave", () => {
-            btn.style.setProperty("--mx", "0px");
-            btn.style.setProperty("--my", "0px");
-          });
-        });
-
-        /* Reveal on scroll */
-        const io = new IntersectionObserver(
-          (entries) => {
-            entries.forEach((en) => {
-              if (en.isIntersecting) en.target.classList.add("is-in");
-            });
-          },
-          { threshold: 0.12, rootMargin: "0px 0px -8% 0px" },
-        );
-        document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
-
-        /* Floating genre chips */
-        const chipHost = document.getElementById("chips");
-        const genres = [
-          { t: "Rock", tone: "mint", x: 12, y: 22 },
-          { t: "Jazz", tone: "gold", x: 78, y: 18 },
-          { t: "Hip-Hop", tone: "spotify", x: 84, y: 48 },
-          { t: "Électro", tone: "blue", x: 8, y: 55 },
-          { t: "Soul", tone: "gold", x: 70, y: 72 },
-          { t: "Sans genre", tone: "mint", x: 18, y: 78 },
-          { t: "DnB", tone: "spotify", x: 55, y: 28 },
-          { t: "Indie", tone: "blue", x: 42, y: 62 },
-        ];
-        const chipState = [];
-
-        if (chipHost && !reduce) {
-          genres.forEach((g, i) => {
-            const el = document.createElement("button");
-            el.type = "button";
-            el.className = "chip";
-            el.dataset.tone = g.tone;
-            el.textContent = g.t;
-            el.style.left = g.x + "%";
-            el.style.top = g.y + "%";
-            el.setAttribute("aria-label", "Pastille genre " + g.t);
-            chipHost.appendChild(el);
-            const st = {
-              el,
-              x: (g.x / 100) * window.innerWidth,
-              y: (g.y / 100) * window.innerHeight,
-              vx: 0,
-              vy: 0,
-              held: false,
-              ox: 0,
-              oy: 0,
-              phase: i * 1.7,
-            };
-            chipState.push(st);
-
-            el.addEventListener("pointerdown", (e) => {
-              e.preventDefault();
-              el.setPointerCapture(e.pointerId);
-              st.held = true;
-              st.vx = 0;
-              st.vy = 0;
-              st.ox = e.clientX - st.x;
-              st.oy = e.clientY - st.y;
-              el.classList.add("is-held");
-              document.body.classList.add("is-dragging");
-            });
-            el.addEventListener("pointermove", (e) => {
-              if (!st.held) return;
-              const nx = e.clientX - st.ox;
-              const ny = e.clientY - st.oy;
-              st.vx = nx - st.x;
-              st.vy = ny - st.y;
-              st.x = nx;
-              st.y = ny;
-              el.style.left = st.x + "px";
-              el.style.top = st.y + "px";
-              el.style.transform = "translate(-50%, -50%)";
-            });
-            function endHold() {
-              if (!st.held) return;
-              st.held = false;
-              el.classList.remove("is-held");
-              document.body.classList.remove("is-dragging");
-            }
-            el.addEventListener("pointerup", endHold);
-            el.addEventListener("pointercancel", endHold);
-          });
-
-          function tickChips(now) {
-            const t = now / 1000;
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-            for (const st of chipState) {
-              if (!st.held) {
-                st.vx *= 0.94;
-                st.vy *= 0.94;
-                st.x += st.vx + Math.sin(t * 0.7 + st.phase) * 0.15;
-                st.y += st.vy + Math.cos(t * 0.55 + st.phase) * 0.12;
-                st.x = Math.min(w - 40, Math.max(40, st.x));
-                st.y = Math.min(h - 40, Math.max(40, st.y));
-                st.el.style.left = st.x + "px";
-                st.el.style.top = st.y + "px";
-                st.el.style.transform = "translate(-50%, -50%)";
-              }
-            }
-            requestAnimationFrame(tickChips);
-          }
-          // init pixel positions
-          chipState.forEach((st) => {
-            st.el.style.transform = "translate(-50%, -50%)";
-          });
-          requestAnimationFrame(tickChips);
-        }
-
-        /* Orbit field (app playground) */
-        const canvas = document.getElementById("orbitCanvas");
-        const wrap = document.getElementById("orbit");
-        if (canvas && wrap && !reduce) {
-          const ctx = canvas.getContext("2d");
-          const labels = ["SCAN", "GENRE", "TAG", "SYNC", "BASS", "ORDER", "LIKES", "MP3"];
-          let bodies = [];
-          let drag = null;
-          let w = 0;
-          let h = 0;
-          let dpr = 1;
-          let last = performance.now();
-
-          function resize() {
-            dpr = Math.min(2, window.devicePixelRatio || 1);
-            w = wrap.clientWidth;
-            h = wrap.clientHeight;
-            canvas.width = Math.floor(w * dpr);
-            canvas.height = Math.floor(h * dpr);
-            canvas.style.width = w + "px";
-            canvas.style.height = h + "px";
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            if (bodies.length === 0) {
-              bodies = labels.map((label, i) => {
-                const ang = (i / labels.length) * Math.PI * 2;
-                return {
-                  x: w / 2 + Math.cos(ang) * (w * 0.22),
-                  y: h / 2 + Math.sin(ang) * (h * 0.28),
-                  vx: 0,
-                  vy: 0,
-                  r: 16 + (i % 3) * 3,
-                  label,
-                };
-              });
-            }
-          }
-          resize();
-          window.addEventListener("resize", resize);
-
-          function ptr(e) {
-            const r = canvas.getBoundingClientRect();
-            return { x: e.clientX - r.left, y: e.clientY - r.top };
-          }
-
-          canvas.addEventListener("pointerdown", (e) => {
-            const p = ptr(e);
-            for (let i = bodies.length - 1; i >= 0; i--) {
-              const b = bodies[i];
-              const dx = p.x - b.x;
-              const dy = p.y - b.y;
-              if (dx * dx + dy * dy < (b.r + 8) * (b.r + 8)) {
-                drag = { i, ox: dx, oy: dy };
-                canvas.setPointerCapture(e.pointerId);
-                break;
-              }
-            }
-          });
-          canvas.addEventListener("pointermove", (e) => {
-            if (!drag) return;
-            const p = ptr(e);
-            const b = bodies[drag.i];
-            const nx = p.x - drag.ox;
-            const ny = p.y - drag.oy;
-            b.vx = nx - b.x;
-            b.vy = ny - b.y;
-            b.x = nx;
-            b.y = ny;
-          });
-          canvas.addEventListener("pointerup", () => {
-            drag = null;
-          });
-
-          function frame(now) {
-            const dt = Math.min(0.033, (now - last) / 1000);
-            last = now;
-            const cx = w / 2;
-            const cy = h / 2;
-            const mood = Number(getComputedStyle(root).getPropertyValue("--mood")) || 0;
-            const accent = getComputedStyle(root).getPropertyValue("--accent").trim() || "#7dffd4";
-            const accent2 = getComputedStyle(root).getPropertyValue("--accent-2").trim() || "#8ab4ff";
-            const gold = getComputedStyle(root).getPropertyValue("--gold").trim() || "#e4c391";
-
-            for (let i = 0; i < bodies.length; i++) {
-              const b = bodies[i];
-              if (drag && drag.i === i) continue;
-              b.vx += (cx - b.x) * 1.1 * dt;
-              b.vy += (cy - b.y) * 1.1 * dt;
-              b.vx *= 0.985;
-              b.vy *= 0.985;
-              b.x += b.vx;
-              b.y += b.vy;
-              b.x = Math.min(w - b.r, Math.max(b.r, b.x));
-              b.y = Math.min(h - b.r, Math.max(b.r, b.y));
-            }
-            for (let i = 0; i < bodies.length; i++) {
-              for (let j = i + 1; j < bodies.length; j++) {
-                const a = bodies[i];
-                const b = bodies[j];
-                let dx = b.x - a.x;
-                let dy = b.y - a.y;
-                let dist = Math.hypot(dx, dy) || 0.001;
-                const min = a.r + b.r + 4;
-                if (dist < min) {
-                  const push = ((min - dist) / dist) * 0.5;
-                  dx *= push;
-                  dy *= push;
-                  if (!(drag && drag.i === i)) {
-                    a.x -= dx;
-                    a.y -= dy;
-                    a.vx -= dx * 0.2;
-                    a.vy -= dy * 0.2;
-                  }
-                  if (!(drag && drag.i === j)) {
-                    b.x += dx;
-                    b.y += dy;
-                    b.vx += dx * 0.2;
-                    b.vy += dy * 0.2;
-                  }
-                }
-              }
-            }
-
-            ctx.clearRect(0, 0, w, h);
-            // links
-            ctx.strokeStyle = `rgba(125,255,212,${0.08 + mood * 0.08})`;
-            ctx.lineWidth = 1;
-            for (let i = 0; i < bodies.length; i++) {
-              for (let j = i + 1; j < bodies.length; j++) {
-                const a = bodies[i];
-                const b = bodies[j];
-                if (Math.hypot(a.x - b.x, a.y - b.y) < 120) {
-                  ctx.beginPath();
-                  ctx.moveTo(a.x, a.y);
-                  ctx.lineTo(b.x, b.y);
-                  ctx.stroke();
-                }
-              }
-            }
-            const colors = [accent, accent2, gold, "#1ed760"];
-            bodies.forEach((b, i) => {
-              const col = colors[i % colors.length];
-              ctx.beginPath();
-              ctx.fillStyle = col + "22";
-              ctx.arc(b.x, b.y, b.r + 10, 0, Math.PI * 2);
-              ctx.fill();
-              ctx.beginPath();
-              ctx.fillStyle = col;
-              ctx.arc(b.x, b.y, b.r * 0.35, 0, Math.PI * 2);
-              ctx.fill();
-              ctx.font = "500 11px 'IBM Plex Mono', monospace";
-              ctx.fillStyle = "#f6f1e8";
-              ctx.textAlign = "center";
-              ctx.fillText(b.label, b.x, b.y + b.r + 14);
-            });
-
-            requestAnimationFrame(frame);
-          }
-          requestAnimationFrame(frame);
-        }
-      })();
-    </script>
+    <script src="landing.js" defer></script>
   </body>
 </html>

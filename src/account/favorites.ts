@@ -130,3 +130,9 @@ export async function clearCloudLink(userId: string): Promise<void> {
   if (!isTauri()) return;
   await invokeDb("db_clear_cloud_link", { userId });
 }
+
+/** Déconnexion cloud avec révocation serveur des refresh tokens. */
+export async function cloudDisconnect(userId: string): Promise<void> {
+  if (!isTauri()) return;
+  await invokeDb("cloud_logout", { userId });
+}
