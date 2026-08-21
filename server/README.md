@@ -1,62 +1,62 @@
 # BassOrder API (self-host)
 
-Auth email/mdp (Argon2id) + JWT + refresh rotatif. Knowledge cloud : miroir privé + pool agrégé. OAuth Google/Discord en stub (à brancher avec client id/secret).
+Email/password auth (Argon2id) + JWT + rotating refresh. Cloud knowledge: private mirror + aggregated pool. Google/Discord OAuth stubs (wire with client id/secret).
 
 ## Dev
 
 ```bash
 cd server
 # PowerShell
-$env:BASSORDER_JWT_SECRET="coller-ici-un-secret-aleatoire-d-au-moins-32-caracteres"
-# Ou uniquement en local :
+$env:BASSORDER_JWT_SECRET="paste-a-random-secret-of-at-least-32-characters"
+# Or local only:
 # $env:BASSORDER_ALLOW_INSECURE_DEV="1"
 cargo run
 ```
 
-Ou depuis la racine : `pnpm api`
+Or from the repo root: `pnpm api`
 
-Écoute : `http://127.0.0.1:8787`
+Listen: `http://127.0.0.1:8787`
 
 ## Endpoints
 
-| Méthode | Path | Rôle |
+| Method | Path | Role |
 |---------|------|------|
 | GET | `/health` | ping |
 | POST | `/auth/register` | `{ email, password }` → tokens |
-| POST | `/auth/login` | idem |
+| POST | `/auth/login` | same |
 | POST | `/auth/refresh` | `{ refreshToken }` |
-| POST | `/auth/logout` | révoque refresh |
+| POST | `/auth/logout` | revoke refresh |
 | GET | `/auth/me` | Bearer access |
-| GET | `/auth/oauth/:provider/start` | stub OAuth |
-| PUT | `/knowledge/mirror` | Bearer — push miroir privé (`profileId` + artistes classés) |
-| GET | `/knowledge/mirror?profileId=` | Bearer — restaure son miroir |
-| GET | `/knowledge/pool?keys=&limit=` | Bearer — consensus lecture seule (combler les trous) |
+| GET | `/auth/oauth/:provider/start` | OAuth stub |
+| PUT | `/knowledge/mirror` | Bearer — push private mirror (`profileId` + classified artists) |
+| GET | `/knowledge/mirror?profileId=` | Bearer — restore your mirror |
+| GET | `/knowledge/pool?keys=&limit=` | Bearer — read-only consensus (fill gaps) |
 
-### Knowledge (V1 Miroir + Pool)
+### Knowledge (V1 Mirror + Pool)
 
-- **Miroir** : backup privé par `(account_id, profileId)`. Seuls les artistes avec `parent` non vide sont stockés (max 50 000).
-- **Pool** : agrège tous les miroirs ; consensus = `(parent, sub)` avec le plus de comptes distincts, tie-break `SUM(likes)`. N’écrase jamais un classement local côté app.
-- Body miroir (camelCase) aligné sur la knowledge locale Tauri.
+- **Mirror**: private backup per `(account_id, profileId)`. Only artists with a non-empty `parent` are stored (max 50,000).
+- **Pool**: aggregates all mirrors; consensus = `(parent, sub)` with the most distinct accounts, tie-break `SUM(likes)`. Never overwrites a local classification in the app.
+- Mirror body (camelCase) aligned with local Tauri knowledge.
 
-### Phase 2 (prévue)
+### Phase 2 (planned)
 
-- Cache matérialisé `knowledge_pool_cache` + job périodique
-- Complétion serveur des artistes sans `parent` (taxonomie / dico)
-- Stats couverture genres / éventuels votes explicites
+- Materialized `knowledge_pool_cache` + periodic job
+- Server-side completion for artists without `parent` (taxonomy / dictionary)
+- Genre coverage stats / optional explicit votes
 
 ## Env
 
-- `BASSORDER_JWT_SECRET` (**obligatoire**, ≥ 32 chars aléatoires ; secrets type `change-me` refusés)
-- `BASSORDER_ALLOW_INSECURE_DEV=1` — autorise un secret de dév faible **uniquement** en local
-- `BASSORDER_API_ADDR` (défaut `127.0.0.1:8787`)
-- `BASSORDER_DB` (fichier SQLite serveur)
-- `BASSORDER_PUBLIC_BASE` (URL publique pour OAuth)
-- `BASSORDER_CORS_ORIGINS` (origines séparées par des virgules ; **obligatoire** si bind hors localhost)
+- `BASSORDER_JWT_SECRET` (**required**, ≥ 32 random chars; secrets like `change-me` are rejected)
+- `BASSORDER_ALLOW_INSECURE_DEV=1` — allows a weak dev secret **only** on localhost
+- `BASSORDER_API_ADDR` (default `127.0.0.1:8787`)
+- `BASSORDER_DB` (server SQLite file)
+- `BASSORDER_PUBLIC_BASE` (public URL for OAuth)
+- `BASSORDER_CORS_ORIGINS` (comma-separated origins; **required** when binding outside localhost)
 
-Rate-limit : 20 tentatives / 15 min par IP (+ email) sur register / login / refresh.
-IP client : `X-Real-IP` uniquement si le peer est loopback (Nginx local).
+Rate-limit: 20 attempts / 15 min per IP (+ email) on register / login / refresh.
+Client IP: `X-Real-IP` only if the peer is loopback (local Nginx).
 
-Durcissement VPS : [`deploy/harden-vps.sh`](../deploy/harden-vps.sh) (UFW, fail2ban, headers nginx, backup SQLite, Docker non-root).
+VPS hardening: [`deploy/harden-vps.sh`](../deploy/harden-vps.sh) (UFW, fail2ban, nginx headers, SQLite backup, non-root Docker).
 
-Docker Compose VPS : voir [`deploy/`](../deploy/) (`docker-compose.yml`, Nginx, Certbot, `bootstrap.sh`).
-Prod publique : `https://api.bassorder.smegg.cloud`.
+Docker Compose VPS: see [`deploy/`](../deploy/) (`docker-compose.yml`, Nginx, Certbot, `bootstrap.sh`).
+Public prod: `https://api.bassorder.smegg.cloud`.

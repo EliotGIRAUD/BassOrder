@@ -282,6 +282,33 @@ pub async fn knowledge_cloud_sync(
     })
 }
 
+/// Déconnexion cloud : révoque les sessions serveur puis efface le lien local.
+#[tauri::command]
+pub async fn cloud_logout(app: AppHandle, user_id: String) -> Result<(), String> {
+    {
+        let state = app.state::<DbState>();
+        session_guard::require_session_unlocked(&app, &state, &user_id)?;
+
+        if let Some(creds) = db::load_cloud_creds(&state, &user_id)? {
+            let mut req = http_client()
+                .post(format!("{}/auth/logout", creds.api_base_url))
+                .json(&json!({ "refreshToken": creds.refresh_token }));
+            if !creds.access_token.is_empty() {
+                req = req.header(
+                    "Authorization",
+                    format!("Bearer {}", creds.access_token),
+                );
+            }
+            // Best-effort : même hors-ligne on purge le local.
+            let _ = req.send().await;
+        }
+    }
+
+    let state_app = app.clone();
+    let state = state_app.state::<DbState>();
+    db::db_clear_cloud_link(app, state, user_id)
+}
+
 /// Best-effort après sync Spotify (ignore si pas de cloud).
 pub async fn maybe_push_after_local_save(app: &AppHandle) {
     let state = app.state::<DbState>();

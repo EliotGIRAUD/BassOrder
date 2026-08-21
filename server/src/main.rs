@@ -10,6 +10,7 @@ mod rate_limit;
 mod state;
 
 use axum::{
+    extract::DefaultBodyLimit,
     http::{header, HeaderValue, Method},
     routing::{get, post, put},
     Router,
@@ -100,6 +101,8 @@ async fn main() {
         .route("/knowledge/mirror", put(knowledge::put_mirror))
         .route("/knowledge/mirror", get(knowledge::get_mirror))
         .route("/knowledge/pool", get(knowledge::get_pool))
+        // Aligné sur Nginx client_max_body_size 1m — défense si accès direct.
+        .layer(DefaultBodyLimit::max(1024 * 1024))
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state);

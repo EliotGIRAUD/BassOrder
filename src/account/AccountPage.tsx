@@ -5,6 +5,7 @@ import { LiveAvatar } from "../users/LiveAvatar";
 import { useUserSession } from "../users/UserSession";
 import {
   clearCloudLink,
+  cloudDisconnect,
   deleteAccountPreset,
   deleteFavorite,
   getCloudLink,
@@ -19,7 +20,6 @@ import {
 import {
   cloudHealth,
   cloudLogin,
-  cloudLogout,
   cloudOAuthStartUrl,
   cloudRegister,
   getApiBase,
@@ -143,14 +143,11 @@ export function AccountPage() {
     if (!user || !link) return;
     setBusy(true);
     try {
-      // best-effort logout serveur
       try {
-        /* tokens not exposed in CloudLink UI — clear local link */
-        await cloudLogout("", "");
+        await cloudDisconnect(user.id);
       } catch {
-        /* offline */
+        await clearCloudLink(user.id);
       }
-      await clearCloudLink(user.id);
       setLink(null);
       fx.toast({ kind: "ok", title: "Déconnecté du cloud", body: "Profil local intact." });
     } finally {

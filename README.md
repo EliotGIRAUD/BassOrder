@@ -1,16 +1,16 @@
 # BassOrder
 
-Trie ta musique par genre — **Spotify** et **bibliothèque locale**, deux modules indépendants.
+Sort your music by genre — **Spotify** and **local library**, two independent modules.
 
-**Télécharger (Windows)** : [bassorder.smegg.cloud](https://bassorder.smegg.cloud)  
-**API cloud** : [api.bassorder.smegg.cloud](https://api.bassorder.smegg.cloud) · `GET /health`  
-**Stack** : Tauri 2 + React + TypeScript + Vite · SQLite locale · API Rust (Axum) self-host
+**Download (Windows)**: [bassorder.smegg.cloud](https://bassorder.smegg.cloud)  
+**Cloud API**: [api.bassorder.smegg.cloud](https://api.bassorder.smegg.cloud) · `GET /health`  
+**Stack**: Tauri 2 + React + TypeScript + Vite · local SQLite · self-hosted Rust API (Axum)
 
-## Installer l’app
+## Install the app
 
-1. Ouvre [bassorder.smegg.cloud](https://bassorder.smegg.cloud) et télécharge l’installateur `.msi`.
-2. Lance BassOrder.
-3. (Optionnel) Rail **Compte** → connecte le cloud ; l’URL API par défaut en build prod est `https://api.bassorder.smegg.cloud`.
+1. Open [bassorder.smegg.cloud](https://bassorder.smegg.cloud) and download the `.msi` installer.
+2. Launch BassOrder.
+3. (Optional) **Account** rail → connect to the cloud; the default production API URL is `https://api.bassorder.smegg.cloud`.
 
 ## Dev (Windows / PowerShell)
 
@@ -20,20 +20,20 @@ pnpm install
 pnpm tauri dev
 ```
 
-UI seule (navigateur, sans SQLite Tauri) :
+UI only (browser, no Tauri SQLite):
 
 ```bash
 pnpm dev
 ```
 
-API locale :
+Local API:
 
 ```bash
 pnpm api
 # http://127.0.0.1:8787
 ```
 
-Build installateur :
+Build installer:
 
 ```bash
 # Prod API URL baked into the frontend:
@@ -41,36 +41,40 @@ Build installateur :
 pnpm tauri build
 ```
 
-Artefacts : `src-tauri/target/release/bundle/`.
+Artifacts: `src-tauri/target/release/bundle/`.
 
 ## Modules
 
-| Module | Rôle |
+| Module | Role |
 |--------|------|
-| Spotify | OAuth → analyse → playlists par genre |
-| Local | Dossier PC → tags → aperçu → copie ou déplacement par genre |
+| Spotify | OAuth → analysis → playlists by genre |
+| Local | PC folder → tags → preview → copy or move by genre |
 
-Le module **Local** nécessite la fenêtre Tauri. Par défaut les fichiers sont **copiés** dans des sous-dossiers (Rock, Jazz, Sans genre…).
+The **Local** module needs the Tauri window. By default files are **copied** into subfolders (Rock, Jazz, Uncategorized…).
 
-## Base de données locale
+## Local database
 
-Tout est stocké dans un fichier SQLite :
+Everything is stored in a SQLite file:
 
 `%APPDATA%\com.eliot.bassorder\bassorder.db`
 
-Paramètres → **Ouvrir le dossier de la base**.
+Settings → **Open database folder**.
 
-## Compte & API cloud
+## Account & cloud API
 
-- Rail **Compte** : login cloud (email), PIN local, favoris / presets, **Sync knowledge** (miroir + pool).
-- Self-host : dossier [`server/`](server/) — détails dans [`server/README.md`](server/README.md).
-- Déploiement VPS : [`deploy/`](deploy/) (`docker compose`, Nginx, Certbot).
+- **Account** rail: cloud login (email), local PIN, favorites / presets, **Sync knowledge** (mirror + pool).
+- Self-host: [`server/`](server/) — details in [`server/README.md`](server/README.md).
+- VPS deploy: [`deploy/`](deploy/) (`docker compose`, Nginx, Certbot).
 
 ```bash
-# Variable front (build)
+# Frontend build variable
 VITE_BASSORDER_API=https://api.bassorder.smegg.cloud
 ```
 
-## Licence
+## License & legal
 
-Projet personnel / école — voir le dépôt pour les évolutions.
+- Code: [MIT License](LICENSE) — © 2026 Eliot GIRAUD
+- Security: [SECURITY.md](SECURITY.md)
+- Site: [Privacy](https://bassorder.smegg.cloud/privacy.html) · [Terms](https://bassorder.smegg.cloud/terms.html) · [Legal notice](https://bassorder.smegg.cloud/mentions.html)
+
+Software provided “as is”, without warranty. Not affiliated with Spotify.

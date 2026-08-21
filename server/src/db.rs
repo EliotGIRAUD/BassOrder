@@ -87,8 +87,9 @@ impl Db {
                 params![id, email, password_hash, chrono_now()],
             )
             .map_err(|e| {
+                // Message volontairement générique (anti-énumération d’emails).
                 if e.to_string().contains("UNIQUE") {
-                    ApiError::Conflict("Email déjà utilisé.".into())
+                    ApiError::BadRequest("Impossible de créer ce compte.".into())
                 } else {
                     ApiError::Internal(e.to_string())
                 }
@@ -183,6 +184,20 @@ impl Db {
             )
             .map_err(|e| ApiError::Internal(e.to_string()))?;
             Ok(())
+        })
+    }
+
+    /// Révoque tous les refresh tokens d’un compte (déconnexion globale / reuse detection).
+    pub fn revoke_all_refresh_for_account(&self, account_id: &str) -> ApiResult<u64> {
+        self.with(|conn| {
+            let n = conn
+                .execute(
+                    "UPDATE refresh_tokens SET revoked = 1
+                     WHERE account_id = ?1 AND revoked = 0",
+                    [account_id],
+                )
+                .map_err(|e| ApiError::Internal(e.to_string()))?;
+            Ok(n as u64)
         })
     }
 
@@ -360,12 +375,17 @@ impl Db {
         })
     }
 
-    /// Consensus pool : (parent, sub) majoritaire par artiste, tie-break SUM(likes).
+    /// Consensus pool : (parent, sub) majoritaire par artiste, tie-break SUM(min(likes, cap)).
+    /// `min_votes` : quorum anti-Sybil (défaut 2 côté AppState).
     pub fn knowledge_pool(
         &self,
         keys: Option<&[String]>,
         limit: i64,
+        min_votes: i64,
+        likes_cap: i64,
     ) -> ApiResult<Vec<PoolEntryRow>> {
+        let min_votes = min_votes.max(1);
+        let likes_cap = likes_cap.clamp(1, 10_000);
         self.with(|conn| {
             let sql = if keys.map(|k| !k.is_empty()).unwrap_or(false) {
                 let placeholders = keys
@@ -375,14 +395,17 @@ impl Db {
                     .map(|(i, _)| format!("?{}", i + 1))
                     .collect::<Vec<_>>()
                     .join(",");
+                // Params: keys…, likes_cap, min_votes, limit
+                let n_keys = keys.unwrap().len();
                 format!(
                     "WITH tallies AS (
                        SELECT artist_key, parent, sub,
                               COUNT(DISTINCT account_id) AS votes,
-                              SUM(likes) AS weight
+                              SUM(MIN(likes, ?{cap})) AS weight
                        FROM knowledge_mirror_artists
                        WHERE parent != '' AND artist_key IN ({placeholders})
                        GROUP BY artist_key, parent, sub
+                       HAVING votes >= ?{min}
                      ),
                      ranked AS (
                        SELECT artist_key, parent, sub, votes, weight,
@@ -394,19 +417,22 @@ impl Db {
                      )
                      SELECT artist_key, parent, sub, votes, weight
                      FROM ranked WHERE rn = 1
-                     LIMIT ?{n}",
+                     LIMIT ?{lim}",
                     placeholders = placeholders,
-                    n = keys.unwrap().len() + 1
+                    cap = n_keys + 1,
+                    min = n_keys + 2,
+                    lim = n_keys + 3,
                 )
             } else {
-                format!(
-                    "WITH tallies AS (
+                // Params: likes_cap, min_votes, limit
+                "WITH tallies AS (
                        SELECT artist_key, parent, sub,
                               COUNT(DISTINCT account_id) AS votes,
-                              SUM(likes) AS weight
+                              SUM(MIN(likes, ?1)) AS weight
                        FROM knowledge_mirror_artists
                        WHERE parent != ''
                        GROUP BY artist_key, parent, sub
+                       HAVING votes >= ?2
                      ),
                      ranked AS (
                        SELECT artist_key, parent, sub, votes, weight,
@@ -419,8 +445,8 @@ impl Db {
                      SELECT artist_key, parent, sub, votes, weight
                      FROM ranked WHERE rn = 1
                      ORDER BY votes DESC, weight DESC
-                     LIMIT ?1"
-                )
+                     LIMIT ?3"
+                    .to_string()
             };
 
             let mut stmt = conn
@@ -442,6 +468,8 @@ impl Db {
                     .iter()
                     .map(|k| Box::new(k.clone()) as Box<dyn rusqlite::ToSql>)
                     .collect();
+                params.push(Box::new(likes_cap));
+                params.push(Box::new(min_votes));
                 params.push(Box::new(limit));
                 let param_refs: Vec<&dyn rusqlite::ToSql> =
                     params.iter().map(|p| p.as_ref()).collect();
@@ -450,7 +478,7 @@ impl Db {
                     .collect::<Result<Vec<_>, _>>()
                     .map_err(|e| ApiError::Internal(e.to_string()))?
             } else {
-                stmt.query_map(params![limit], map_row)
+                stmt.query_map(params![likes_cap, min_votes, limit], map_row)
                     .map_err(|e| ApiError::Internal(e.to_string()))?
                     .collect::<Result<Vec<_>, _>>()
                     .map_err(|e| ApiError::Internal(e.to_string()))?

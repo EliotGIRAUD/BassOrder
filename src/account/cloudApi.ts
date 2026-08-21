@@ -60,14 +60,40 @@ const DEFAULT_API =
       ?.VITE_BASSORDER_API) ||
   "http://127.0.0.1:8787";
 
-let apiBase = DEFAULT_API;
+const ALLOWED_API_EXACT = new Set([
+  "https://api.bassorder.smegg.cloud",
+  "http://127.0.0.1:8787",
+  "http://localhost:8787",
+  "http://127.0.0.1",
+  "http://localhost",
+  "https://127.0.0.1:8787",
+  "https://localhost:8787",
+]);
+
+/** Allowlist anti-phishing : refuse les URL API arbitraires. */
+export function isAllowedApiBase(url: string): boolean {
+  const lower = url.trim().replace(/\/$/, "").toLowerCase();
+  if (!lower || lower.includes("@") || lower.includes("\\") || lower.includes(" ")) {
+    return false;
+  }
+  if (ALLOWED_API_EXACT.has(lower)) return true;
+  return /^(https?):\/\/(127\.0\.0\.1|localhost):\d+$/.test(lower);
+}
+
+let apiBase = isAllowedApiBase(DEFAULT_API) ? DEFAULT_API : "http://127.0.0.1:8787";
 
 export function getApiBase(): string {
   return apiBase.replace(/\/$/, "");
 }
 
 export function setApiBase(url: string): void {
-  apiBase = url.trim().replace(/\/$/, "") || DEFAULT_API;
+  const next = url.trim().replace(/\/$/, "");
+  if (!next || !isAllowedApiBase(next)) {
+    throw new Error(
+      "URL API non autorisée (localhost ou https://api.bassorder.smegg.cloud).",
+    );
+  }
+  apiBase = next;
 }
 
 async function api<T>(

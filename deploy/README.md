@@ -1,50 +1,50 @@
-# Déploiement BassOrder (VPS)
+# BassOrder deployment (VPS)
 
-Cible : `185.98.137.102` / domaine `smegg.cloud` (sans toucher au site SMEGG principal).
+Target: `185.98.137.102` / domain `smegg.cloud` (without touching the main SMEGG site).
 
 ## DNS
 
-Créer deux enregistrements A :
+Create two A records:
 
-| Host | Type | Valeur |
+| Host | Type | Value |
 |------|------|--------|
 | `bassorder` | A | `185.98.137.102` |
 | `api.bassorder` | A | `185.98.137.102` |
 
-(chez le registrar / panel DNS de `smegg.cloud`)
+(at the registrar / DNS panel for `smegg.cloud`)
 
 ## Bootstrap
 
-Sur le VPS (root), après push GitHub :
+On the VPS (root), after a GitHub push:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/EliotGIRAUD/BassOrder/main/deploy/bootstrap.sh | bash
-# ou :
+# or:
 git clone https://github.com/EliotGIRAUD/BassOrder.git /opt/bassorder
 bash /opt/bassorder/deploy/bootstrap.sh
 ```
 
-Puis uploader l’installateur Windows vers `/var/www/bassorder/downloads/`.
+Then upload the Windows installer to `/var/www/bassorder/downloads/`.
 
-## Fichiers
+## Files
 
-- `docker-compose.yml` — API Rust + volume SQLite (non-root, caps drop)
-- `nginx/*.conf` — vhosts (+ snippets headers / rate-limit)
-- `harden-vps.sh` — firewall, fail2ban, SSH, nginx sécu, backups
-- `harden-localhost-binds.sh` — MySQL + SMEGG (PM2) en 127.0.0.1 only
-- `backup-sqlite.sh` — dump quotidien volume SQLite
-- `pull-backups.ps1` — récupère les backups sur ton PC (hors VPS)
-- `landing/` — page de téléchargement
-- `.env.example` — modèle secret JWT
+- `docker-compose.yml` — Rust API + SQLite volume (non-root, caps drop)
+- `nginx/*.conf` — vhosts (+ header / rate-limit snippets)
+- `harden-vps.sh` — firewall, fail2ban, SSH, nginx hardening, backups
+- `harden-localhost-binds.sh` — MySQL + SMEGG (PM2) on 127.0.0.1 only
+- `backup-sqlite.sh` — daily SQLite volume dump
+- `pull-backups.ps1` — pull backups onto your PC (off VPS)
+- `landing/` — download page
+- `.env.example` — JWT secret template
 
-Après un déploiement existant :
+After an existing deployment:
 
 ```bash
 cd /opt/bassorder && git pull
 bash deploy/harden-vps.sh
 ```
 
-Backups sur ton PC (PowerShell) :
+Backups on your PC (PowerShell):
 
 ```powershell
 .\deploy\pull-backups.ps1

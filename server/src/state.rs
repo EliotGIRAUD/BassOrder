@@ -11,6 +11,12 @@ pub struct AppState {
     pub refresh_ttl_secs: i64,
     pub public_base: String,
     pub auth_limiter: Arc<RateLimiter>,
+    /// Rate-limit écritures knowledge (PUT mirror) par compte.
+    pub knowledge_write_limiter: Arc<RateLimiter>,
+    /// Quorum minimal de comptes distincts pour publier une entrée pool.
+    pub pool_min_votes: i64,
+    /// Plafond likes pris en compte dans le poids pool (et à l’écriture miroir).
+    pub likes_cap: i64,
 }
 
 impl AppState {
@@ -64,6 +70,20 @@ impl AppState {
 
         // 20 tentatives / 15 min par IP(+email) sur login/register/refresh
         let auth_limiter = Arc::new(RateLimiter::new(20, Duration::from_secs(15 * 60)));
+        // 10 syncs miroir / 15 min par compte (anti-DoS / spam pool)
+        let knowledge_write_limiter =
+            Arc::new(RateLimiter::new(10, Duration::from_secs(15 * 60)));
+
+        let pool_min_votes = std::env::var("BASSORDER_POOL_MIN_VOTES")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(2)
+            .max(1);
+        let likes_cap = std::env::var("BASSORDER_LIKES_CAP")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(100)
+            .clamp(1, 10_000);
 
         Ok(Self {
             db: Arc::new(db),
@@ -72,6 +92,9 @@ impl AppState {
             refresh_ttl_secs: 60 * 60 * 24 * 30,
             public_base,
             auth_limiter,
+            knowledge_write_limiter,
+            pool_min_votes,
+            likes_cap,
         })
     }
 }

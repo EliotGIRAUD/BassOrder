@@ -99,6 +99,14 @@ server {
         proxy_pass http://127.0.0.1:8787;
     }
 
+    location /knowledge/ {
+        limit_req zone=bassorder_knowledge burst=5 nodelay;
+        limit_conn bassorder_conn 20;
+        include /etc/nginx/snippets/bassorder-api-proxy.conf;
+        include /etc/nginx/snippets/bassorder-security-headers.conf;
+        proxy_pass http://127.0.0.1:8787;
+    }
+
     location / {
         limit_req zone=bassorder_api burst=60 nodelay;
         limit_conn bassorder_conn 40;
@@ -135,7 +143,7 @@ server {
     index index.html;
 
     include /etc/nginx/snippets/bassorder-security-headers.conf;
-    add_header Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; media-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
 
     location / {
         try_files $uri $uri/ =404;
@@ -180,8 +188,20 @@ ln -sf /etc/nginx/sites-available/bassorder.smegg.cloud.conf /etc/nginx/sites-en
 nginx -t
 systemctl reload nginx
 
+echo "==> Landing sync (HTML/JS/CSS + clips metadata)"
+mkdir -p "$WWW_ROOT/downloads" "$WWW_ROOT/clips"
+cp "$DEPLOY/landing/index.html" "$WWW_ROOT/index.html"
+# Pages légales + assets (ignore si absents)
+shopt -s nullglob
+for f in "$DEPLOY/landing/"*.html "$DEPLOY/landing/landing.js" "$DEPLOY/landing/legal.css"; do
+  [[ -f "$f" ]] && cp "$f" "$WWW_ROOT/"
+done
+for f in "$DEPLOY/landing/clips/"*.json "$DEPLOY/landing/clips/"*.md; do
+  [[ -f "$f" ]] && cp "$f" "$WWW_ROOT/clips/"
+done
+shopt -u nullglob
+
 echo "==> Permissions landing / downloads"
-mkdir -p "$WWW_ROOT/downloads"
 chown -R root:www-data "$WWW_ROOT"
 find "$WWW_ROOT" -type d -exec chmod 755 {} \;
 find "$WWW_ROOT" -type f -exec chmod 644 {} \;
