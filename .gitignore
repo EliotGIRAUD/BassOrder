@@ -1,0 +1,38 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+src-tauri/target/
+
+# Secrets & données locales
+.env
+.env.*
+!.env.example
+!deploy/.env.example
+server/.env
+deploy/.env
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+**/.token-key
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

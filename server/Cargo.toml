@@ -1,0 +1,29 @@
+[package]
+name = "bassorder-api"
+version = "0.1.0"
+edition = "2021"
+description = "API self-host BassOrder — auth + sync"
+
+[[bin]]
+name = "bassorder-api"
+path = "src/main.rs"
+
+[dependencies]
+axum = { version = "0.8", features = ["macros"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time"] }
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+jsonwebtoken = "9"
+argon2 = "0.5"
+password-hash = "0.5"
+rand = "0.8"
+sha2 = "0.10"
+hex = "0.4"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+thiserror = "2"
+dotenvy = "0.15"
+rusqlite = { version = "0.32", features = ["bundled"] }

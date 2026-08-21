@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BassOrder — Trie ta musique</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg0: #0c1210;
+        --bg1: #14201a;
+        --ink: #e8f2ea;
+        --muted: #9bb5a4;
+        --accent: #3dffa8;
+        --accent-ink: #062016;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+      }
+      body {
+        font-family: "DM Sans", system-ui, sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(1200px 600px at 10% -10%, #1a3d2e 0%, transparent 55%),
+          radial-gradient(900px 500px at 100% 20%, #243528 0%, transparent 50%),
+          linear-gradient(165deg, var(--bg0), var(--bg1));
+      }
+      .wrap {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 2.5rem 1.25rem;
+      }
+      main {
+        width: min(40rem, 100%);
+      }
+      .brand {
+        font-family: Syne, sans-serif;
+        font-weight: 800;
+        font-size: clamp(2.75rem, 9vw, 4.5rem);
+        letter-spacing: -0.04em;
+        line-height: 0.95;
+        margin: 0 0 1rem;
+      }
+      .brand span {
+        color: var(--accent);
+      }
+      h1 {
+        font-family: Syne, sans-serif;
+        font-weight: 700;
+        font-size: clamp(1.35rem, 3.5vw, 1.85rem);
+        letter-spacing: -0.02em;
+        margin: 0 0 0.75rem;
+      }
+      p {
+        margin: 0 0 1.75rem;
+        color: var(--muted);
+        font-size: 1.05rem;
+        line-height: 1.55;
+        max-width: 34rem;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+      a.btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.9rem 1.35rem;
+        border-radius: 0.55rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: transform 0.15s ease, opacity 0.15s ease;
+      }
+      a.btn:hover {
+        transform: translateY(-1px);
+      }
+      a.primary {
+        background: var(--accent);
+        color: var(--accent-ink);
+      }
+      a.ghost {
+        border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+        color: var(--ink);
+      }
+      .meta {
+        margin-top: 2rem;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+      .meta code {
+        color: var(--accent);
+        font-size: 0.85em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <main>
+        <p class="brand">Bass<span>Order</span></p>
+        <h1>Trie ta musique par genre</h1>
+        <p>
+          App Windows (Spotify + bibliothèque locale) avec sync knowledge
+          cloud optionnelle. Télécharge l’installateur, lance, et classe.
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="/downloads/BassOrder_0.1.0_x64_en-US.msi"
+            >Télécharger pour Windows</a
+          >
+          <a
+            class="btn ghost"
+            href="https://github.com/EliotGIRAUD/BassOrder"
+            rel="noopener"
+            >Code source</a
+          >
+        </div>
+        <p class="meta">
+          API cloud :
+          <code>https://api.bassorder.smegg.cloud</code>
+        </p>
+      </main>
+    </div>
+  </body>
+</html>
