@@ -2101,28 +2101,28 @@
         pointer-events: none;
       }
 
-      /* -- Nudge download (bas droite) -- */
-      .dl-nudge {
-        position: fixed;
-        right: max(1rem, env(safe-area-inset-right));
-        bottom: max(1rem, env(safe-area-inset-bottom));
-        z-index: 18;
+      /* -- Nudge download (bas droite de la mini-demo, après analyse) -- */
+      .sim .dl-nudge {
+        position: absolute;
+        right: 0.85rem;
+        bottom: 0.85rem;
+        z-index: 7;
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        max-width: min(18.5rem, calc(100vw - 2rem));
+        max-width: min(19rem, calc(100% - 1.7rem));
         padding: 0.7rem 0.85rem 0.7rem 0.7rem;
         border-radius: 14px;
         text-decoration: none;
         color: var(--ink);
-        background: rgba(8, 12, 14, 0.88);
-        border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+        background: rgba(8, 12, 14, 0.94);
+        border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
         backdrop-filter: blur(16px);
-        box-shadow: 0 18px 44px -18px rgba(0, 0, 0, 0.65);
+        box-shadow: 0 16px 40px -14px rgba(0, 0, 0, 0.7);
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
-        transform: translateY(12px) scale(0.96);
+        transform: translateY(10px) scale(0.97);
         transition:
           opacity 0.35s var(--ease),
           transform 0.35s var(--ease),
@@ -2132,17 +2132,17 @@
         --mx: 0px;
         --my: 0px;
       }
-      .dl-nudge.is-on {
+      .sim .dl-nudge.is-on {
         opacity: 1;
         visibility: visible;
         pointer-events: auto;
-        transform: translate(var(--mx), calc(var(--my) + 0px)) scale(1);
+        transform: translate(var(--mx), var(--my)) scale(1);
       }
-      .dl-nudge:hover {
-        border-color: color-mix(in srgb, var(--accent) 70%, transparent);
-        background: rgba(10, 16, 18, 0.94);
+      .sim .dl-nudge:hover {
+        border-color: color-mix(in srgb, var(--accent) 75%, transparent);
+        background: rgba(10, 16, 18, 0.98);
       }
-      .dl-nudge:focus-visible {
+      .sim .dl-nudge:focus-visible {
         outline: 2px solid var(--accent);
         outline-offset: 3px;
       }
@@ -2187,14 +2187,20 @@
         font-weight: 700;
         transition: transform 0.2s var(--ease);
       }
-      .dl-nudge:hover .dl-nudge-arrow {
+      .sim .dl-nudge:hover .dl-nudge-arrow {
         transform: translateY(2px);
       }
-      @media (max-width: 520px) {
-        .dl-nudge {
-          left: max(0.75rem, env(safe-area-inset-left));
-          right: max(0.75rem, env(safe-area-inset-right));
+      .sim-panel[data-step="plan"].is-on {
+        padding-bottom: 5.5rem;
+      }
+      @media (max-width: 640px) {
+        .sim .dl-nudge {
+          left: 0.75rem;
+          right: 0.75rem;
           max-width: none;
+        }
+        .sim .dl-nudge-copy strong {
+          font-size: 0.8rem;
         }
       }
 
@@ -2209,14 +2215,14 @@
           animation: none !important;
           transition: none !important;
         }
-        .dl-nudge {
+        .sim .dl-nudge {
           transition: opacity 0.2s ease, visibility 0.2s;
           transform: none;
         }
-        .dl-nudge.is-on {
+        .sim .dl-nudge.is-on {
           transform: none;
         }
-        .dl-nudge:hover .dl-nudge-arrow {
+        .sim .dl-nudge:hover .dl-nudge-arrow {
           transform: none;
         }
       }
@@ -2709,6 +2715,22 @@
                 </p>
               </div>
             </div>
+
+            <a
+              class="dl-nudge mag"
+              id="dlNudge"
+              href="/downloads/BassOrder_0.1.5_x64_en-US.msi"
+              download
+              aria-label="Télécharger BassOrder pour Windows — récupère tes titres triés par genre sur ton PC"
+              hidden
+            >
+              <span class="dl-nudge-mark" aria-hidden="true"></span>
+              <span class="dl-nudge-copy">
+                <strong>Récupère tes titres triés par genre sur ton PC</strong>
+                <span>Télécharger BassOrder pour Windows</span>
+              </span>
+              <span class="dl-nudge-arrow" aria-hidden="true">&darr;</span>
+            </a>
           </div>
         </div>
       </section>
@@ -2782,23 +2804,6 @@
         </div>
       </footer>
     </div>
-
-    </div>
-
-    <a
-      class="dl-nudge mag"
-      id="dlNudge"
-      href="/downloads/BassOrder_0.1.5_x64_en-US.msi"
-      download
-      aria-label="Télécharger BassOrder pour Windows — récupère tes titres triés par genre sur ton PC"
-    >
-      <span class="dl-nudge-mark" aria-hidden="true"></span>
-      <span class="dl-nudge-copy">
-        <strong>Récupère tes titres triés par genre sur ton PC</strong>
-        <span>Télécharger BassOrder pour Windows</span>
-      </span>
-      <span class="dl-nudge-arrow" aria-hidden="true">&darr;</span>
-    </a>
 
     <div class="player-overlay" id="playerOverlay" role="dialog" aria-modal="true" aria-label="Track preview">
       <button type="button" class="player-backdrop" id="playerBackdrop" aria-label="Close"></button>
