@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { intlLocale, type AppLocale } from "../i18n";
 import { CountUp } from "../ui/motion";
 import { OrbitField } from "../ui/fx";
 import { PushFill } from "../ui/push";
@@ -39,15 +41,15 @@ type ParentNode = {
 
 type Crumb = { label: string; onSelect?: () => void };
 
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: "name", label: "Artiste" },
-  { key: "likes", label: "Likes" },
-  { key: "sub", label: "Sous-genre" },
-];
-
-const OPEN_LABEL = "À classer";
-
 export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void }) {
+  const { t, i18n } = useTranslation("knowledge");
+  const loc = intlLocale((i18n.language.startsWith("fr") ? "fr" : "en") as AppLocale);
+  const openLabel = t("toSort");
+  const sortOptions: { key: SortKey; label: string }[] = [
+    { key: "name", label: t("sortArtist") },
+    { key: "likes", label: t("sortLikes") },
+    { key: "sub", label: t("sortSub") },
+  ];
   const tauri = isTauri();
   const fx = useExperience();
   const [data, setData] = useState<KnowledgeDump | null>(null);
@@ -78,11 +80,11 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
         const count = Object.keys(next.artists).length;
         fx.toast({
           kind: "ok",
-          title: "Dictionnaire à jour",
+          title: t("toastUpdated"),
           body:
             count === 0
-              ? "Aucune entrée pour ce profil."
-              : `${count} artiste${count > 1 ? "s" : ""} · profil actif.`,
+              ? t("toastUpdatedEmpty")
+              : t("toastUpdatedBody", { count }),
         });
       }
     } catch (err) {
@@ -92,7 +94,7 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
       if (announce) {
         fx.toast({
           kind: "warn",
-          title: "Rafraîchissement impossible",
+          title: t("toastRefreshFail"),
           body: message,
         });
       }
@@ -139,7 +141,7 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
     return Object.entries(data.artists).map(([key, artist]) => ({ key, artist }));
   }, [data]);
 
-  const tree = useMemo(() => buildGenreTree(artists), [artists]);
+  const tree = useMemo(() => buildGenreTree(artists, loc), [artists, loc]);
 
   useEffect(() => {
     if (treeBooted || tree.length === 0) {
@@ -190,8 +192,10 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
         })
       : scoped;
 
-    return [...list].sort((a, b) => compareArtists(a.artist, b.artist, sortKey));
-  }, [scoped, query, sortKey]);
+    return [...list].sort((a, b) =>
+      compareArtists(a.artist, b.artist, sortKey, loc, openLabel),
+    );
+  }, [scoped, query, sortKey, loc, openLabel]);
 
   useEffect(() => {
     setListLimit(120);
@@ -248,12 +252,12 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
   }
 
   const crumbs = useMemo((): Crumb[] => {
-    const root: Crumb = { label: "Dictionnaire", onSelect: selectAll };
+    const root: Crumb = { label: t("title"), onSelect: selectAll };
     if (selection.kind === "all") {
-      return [root, { label: "Toute la base" }];
+      return [root, { label: t("allBase") }];
     }
     if (selection.kind === "open") {
-      return [root, { label: OPEN_LABEL }];
+      return [root, { label: openLabel }];
     }
     if (selection.kind === "parent") {
       return [
@@ -269,9 +273,16 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
       },
       { label: selection.sub },
     ];
-  }, [selection]);
+  }, [selection, t, openLabel]);
 
-  const whereHint = locationHint(selection, filtered.length, openCount, coverage);
+  const whereHint = locationHint(
+    selection,
+    filtered.length,
+    openCount,
+    coverage,
+    t,
+  );
+
 
   if (busy && !data) {
     return (
@@ -290,23 +301,21 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
     >
       <header className="local-topbar">
         <div className="local-topbar-copy">
-          <p className="eyebrow">Module Savoir</p>
-          <h2>Dictionnaire d’artistes</h2>
+          <p className="eyebrow">{t("eyebrow")}</p>
+          <h2>{t("title")}</h2>
           <p className="local-lede">
-            Dictionnaire du <strong>profil Spotify actif</strong>
-            {activeProfile ? ` (${activeProfile.name})` : ""}. Chaque profil a
-            sa propre mémoire — change de compte pour explorer un autre goût.
+            {t("lede", { name: activeProfile ? ` (${activeProfile.name})` : "" })}
           </p>
         </div>
         <div className="local-toolbar">
           {profiles.length > 0 && (
             <label className="history-filter">
-              <span className="sr-only">Profil Spotify</span>
+              <span className="sr-only">{t("profileSr")}</span>
               <select
                 value={activeProfile?.id ?? ""}
                 onChange={(e) => void onSwitchProfile(e.target.value)}
                 disabled={busy}
-                title="Changer de profil = changer de dictionnaire"
+                title={t("profileSwitchTitle")}
               >
                 {profiles.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -322,7 +331,7 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
             className="btn-ghost"
             onClick={() => setGuideOpen((v) => !v)}
           >
-            {guideOpen ? "Masquer le guide" : "Comment ça marche"}
+            {guideOpen ? t("hideGuide") : t("showGuide")}
           </button>
           <button
             type="button"
@@ -331,58 +340,46 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
             disabled={busy}
             aria-live="polite"
           >
-            {busy ? "Chargement…" : "Rafraîchir"}
-            <TipPanel side="bottom">
-              Relit la base du profil actif (ignore le cache)
-            </TipPanel>
+            {busy ? t("refreshing") : t("refresh")}
+            <TipPanel side="bottom">{t("refreshTip")}</TipPanel>
           </button>
         </div>
       </header>
       {refreshing && (
         <p className="knowledge-refresh-status" role="status">
-          Mise à jour du dictionnaire…
+          {t("refreshStatus")}
         </p>
       )}
 
       {guideOpen && (
-        <div className="knowledge-guide" aria-label="Guide d’utilisation">
+        <div className="knowledge-guide" aria-label={t("guideAria")}>
           <ol>
             <li>
-              <strong>1 · Remplir</strong>
-              <span>
-                Spotify → importer les likes → éventuellement « Compléter les
-                genres ».
-              </span>
+              <strong>{t("guide1Title")}</strong>
+              <span>{t("guide1Body")}</span>
             </li>
             <li>
-              <strong>2 · Explorer</strong>
-              <span>
-                Gauche : genre ▸ sous-genre. Centre : liste triable. Droite :
-                fiche.
-              </span>
+              <strong>{t("guide2Title")}</strong>
+              <span>{t("guide2Body")}</span>
             </li>
             <li>
-              <strong>3 · Profiter</strong>
-              <span>
-                Un artiste classé ici range ses titres quand tu analyses dans
-                Mes fichiers.
-              </span>
+              <strong>{t("guide3Title")}</strong>
+              <span>{t("guide3Body")}</span>
             </li>
           </ol>
           {openCount > 0 && (
             <p className="knowledge-guide-tip">
-              {openCount} encore « {OPEN_LABEL} » — le complément Spotify monte
-              la couverture ({coverage}% aujourd’hui).
+              {t("guideTipOpen", {
+                count: openCount,
+                open: openLabel,
+                coverage,
+              })}
             </p>
           )}
         </div>
       )}
 
-      {!tauri && (
-        <p className="local-note">
-          Ouvre BassOrder en app bureau pour lire la base enregistrée sur le disque.
-        </p>
-      )}
+      {!tauri && <p className="local-note">{t("needDesktop")}</p>}
 
       {error && <p className="local-error">{error}</p>}
 
@@ -393,14 +390,11 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
             height={160}
             className="empty-orbit"
           />
-          <h3>Dictionnaire vide</h3>
-          <p>
-            Va dans <strong>Spotify</strong>, connecte ton compte et importe tes
-            likes. Cette page se remplira toute seule.
-          </p>
+          <h3>{t("emptyTitle")}</h3>
+          <p>{t("emptyBody")}</p>
           {onOpenSpotify && (
             <button type="button" className="btn-primary" onClick={onOpenSpotify}>
-              Ouvrir Spotify
+              {t("openSpotify")}
             </button>
           )}
         </div>
@@ -408,10 +402,10 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
 
       {data && artists.length > 0 && (
         <>
-          <div className="knowledge-summary" aria-label="État de la base">
+          <div className="knowledge-summary" aria-label={t("summaryAria")}>
             <div className="knowledge-coverage">
               <div className="knowledge-coverage-top">
-                <span>Couverture genres</span>
+                <span>{t("coverage")}</span>
                 <strong>{coverage}%</strong>
               </div>
               <div
@@ -424,8 +418,12 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
                 <PushFill value={coverage} className="knowledge-coverage-fill" />
               </div>
               <p>
-                {classified} classés · {openCount} à compléter · {tree.length}{" "}
-                genres · {subCount} sous-genres
+                {t("coverageDetail", {
+                  classified,
+                  open: openCount,
+                  genres: tree.length,
+                  subs: subCount,
+                })}
               </p>
             </div>
 
@@ -434,7 +432,7 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
               className={`knowledge-stat-card${selection.kind === "all" ? " is-active" : ""}`}
               onClick={selectAll}
             >
-              <span>Toute la base</span>
+              <span>{t("allBase")}</span>
               <strong>
                 <CountUp value={artists.length} />
               </strong>
@@ -445,21 +443,23 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
               onClick={selectOpen}
               disabled={openCount === 0}
             >
-              <span>{OPEN_LABEL}</span>
+              <span>{openLabel}</span>
               <strong>
                 <CountUp value={openCount} />
               </strong>
             </button>
             <div className="knowledge-stat-card is-static">
-              <span>Compte</span>
+              <span>{t("account")}</span>
               <strong className="kpi-text">
                 {data.displayName?.trim() || "—"}
               </strong>
-              {data.syncedAt && <em>Sync {formatSyncedAt(data.syncedAt)}</em>}
+              {data.syncedAt && (
+                <em>{t("sync", { when: formatSyncedAt(data.syncedAt, loc) })}</em>
+              )}
             </div>
           </div>
 
-          <nav className="knowledge-crumbs" aria-label="Position dans le dictionnaire">
+          <nav className="knowledge-crumbs" aria-label={t("crumbsAria")}>
             {crumbs.map((crumb, index) => (
               <span key={`${crumb.label}-${index}`} className="knowledge-crumb">
                 {index > 0 && <span className="knowledge-crumb-sep">/</span>}
@@ -481,10 +481,8 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
               <div className="knowledge-pane-head">
                 <div className="knowledge-pane-title-row">
                   <div>
-                    <p className="eyebrow">1 · Genres</p>
-                    <p className="knowledge-pane-help">
-                      ▸ ouvre les sous-genres
-                    </p>
+                    <p className="eyebrow">{t("paneGenres")}</p>
+                    <p className="knowledge-pane-help">{t("paneGenresHelp")}</p>
                   </div>
                   <div className="knowledge-tree-actions">
                     <button
@@ -494,24 +492,24 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
                         setExpanded(new Set(tree.map((node) => node.parent)))
                       }
                     >
-                      Tout ouvrir
+                      {t("expandAll")}
                     </button>
                     <button
                       type="button"
                       className="btn-ghost"
                       onClick={() => setExpanded(new Set())}
                     >
-                      Replier
+                      {t("collapseAll")}
                     </button>
                   </div>
                 </div>
                 <input
                   type="search"
                   className="plan-search"
-                  placeholder="Chercher un artiste ou un genre…"
+                  placeholder={t("searchPlaceholder")}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  aria-label="Filtrer artistes et genres"
+                  aria-label={t("searchAria")}
                 />
                 {query.trim() && (
                   <button
@@ -519,12 +517,12 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
                     className="knowledge-clear-filter"
                     onClick={() => setQuery("")}
                   >
-                    Effacer le filtre « {query.trim()} »
+                    {t("clearFilter", { query: query.trim() })}
                   </button>
                 )}
               </div>
 
-              <ul className="knowledge-tree" role="tree" aria-label="Arbre des genres">
+              <ul className="knowledge-tree" role="tree" aria-label={t("treeAria")}>
                 <li role="none">
                   <button
                     type="button"
@@ -532,7 +530,7 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
                     className={`knowledge-tree-item is-root${selection.kind === "all" ? " is-active" : ""}`}
                     onClick={selectAll}
                   >
-                    <span className="knowledge-tree-label">Tous les artistes</span>
+                    <span className="knowledge-tree-label">{t("allArtists")}</span>
                     <em>{artists.length}</em>
                   </button>
                 </li>
@@ -545,7 +543,7 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
                       className={`knowledge-tree-item is-pending${selection.kind === "open" ? " is-active" : ""}`}
                       onClick={selectOpen}
                     >
-                      <span className="knowledge-tree-label">{OPEN_LABEL}</span>
+                      <span className="knowledge-tree-label">{openLabel}</span>
                       <em>{openCount}</em>
                     </button>
                   </li>
@@ -568,8 +566,8 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
                             className={`knowledge-tree-twist${isOpen ? " is-open" : ""}`}
                             aria-label={
                               isOpen
-                                ? `Replier ${node.parent}`
-                                : `Déplier les sous-genres de ${node.parent}`
+                                ? t("collapseParent", { parent: node.parent })
+                                : t("expandParent", { parent: node.parent })
                             }
                             aria-expanded={isOpen}
                             onClick={() => toggleParent(node.parent)}
@@ -596,10 +594,7 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
                           <span className="knowledge-tree-label">
                             {node.parent}
                             {hasSubs && (
-                              <small>
-                                {node.subs.length} sous-genre
-                                {node.subs.length > 1 ? "s" : ""}
-                              </small>
+                              <small>{t("subCount", { count: node.subs.length })}</small>
                             )}
                           </span>
                           <em>{node.count}</em>
@@ -627,7 +622,7 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
                                 >
                                   <span className="knowledge-tree-label">
                                     {sameAsParent
-                                      ? `Général · ${sub.sub}`
+                                      ? t("generalSub", { sub: sub.sub })
                                       : sub.sub}
                                   </span>
                                   <em>{sub.count}</em>
@@ -647,22 +642,23 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
               <span className="spin-border" aria-hidden />
               <div className="knowledge-pane-head knowledge-table-head">
                 <div>
-                  <p className="eyebrow">2 · Artistes</p>
-                  <h3>{selectionTitle(selection)}</h3>
+                  <p className="eyebrow">{t("paneArtists")}</p>
+                  <h3>{selectionTitle(selection, t, openLabel)}</h3>
                   <p className="knowledge-table-count">
-                    {filtered.length} résultat
-                    {filtered.length > 1 ? "s" : ""}
-                    {query.trim() ? " · filtre actif" : ""}
+                    {t("resultCount", { count: filtered.length })}
+                    {query.trim() ? t("filterActive") : ""}
                     {" · "}
-                    tri {SORT_OPTIONS.find((o) => o.key === sortKey)?.label}
+                    {t("sortBy", {
+                      label: sortOptions.find((o) => o.key === sortKey)?.label ?? "",
+                    })}
                   </p>
                 </div>
                 <div
                   className="mode-toggle sort-toggle"
                   role="group"
-                  aria-label="Trier les artistes"
+                  aria-label={t("sortArtistsAria")}
                 >
-                  {SORT_OPTIONS.map(({ key, label }) => (
+                  {sortOptions.map(({ key, label }) => (
                     <button
                       key={key}
                       type="button"
@@ -685,7 +681,7 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
                           className={sortKey === "name" ? "is-active" : ""}
                           onClick={() => setSortKey("name")}
                         >
-                          Artiste
+                          {t("sortArtist")}
                         </button>
                       </th>
                       <th>
@@ -694,7 +690,7 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
                           className={sortKey === "sub" ? "is-active" : ""}
                           onClick={() => setSortKey("sub")}
                         >
-                          Dossier
+                          {t("colFolder")}
                         </button>
                       </th>
                       <th className="is-num">
@@ -703,19 +699,19 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
                           className={sortKey === "likes" ? "is-active" : ""}
                           onClick={() => setSortKey("likes")}
                         >
-                          Likes
+                          {t("sortLikes")}
                         </button>
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     {visibleRows.map(({ key, artist }) => {
-                      const active = selected?.key === key;
+                      const activeRow = selected?.key === key;
                       const open = !artist.parent.trim();
                       return (
                         <tr
                           key={key}
-                          className={`${active ? "is-active" : ""}${open ? " is-pending" : ""}`}
+                          className={`${activeRow ? "is-active" : ""}${open ? " is-pending" : ""}`}
                           onClick={() => setSelectedKey(key)}
                         >
                           <td>
@@ -725,7 +721,7 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
                             <span
                               className={`knowledge-genre-cell${open ? " is-pending" : ""}`}
                             >
-                              {genreLabel(artist)}
+                              {genreLabel(artist, openLabel)}
                             </span>
                           </td>
                           <td className="is-num">{artist.likes}</td>
@@ -741,17 +737,17 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
                       className="btn-ghost"
                       onClick={() => setListLimit((n) => n + 150)}
                     >
-                      Afficher plus ({filtered.length - listLimit} restants)
+                      {t("showMore", { count: filtered.length - listLimit })}
                     </button>
                   </div>
                 )}
                 {filtered.length === 0 && (
                   <div className="knowledge-empty-slice">
-                    <h4>Aucun artiste ici</h4>
+                    <h4>{t("emptySliceTitle")}</h4>
                     <p>
                       {query.trim()
-                        ? "Élargis ou efface le filtre de recherche."
-                        : "Choisis un autre genre à gauche, ou toute la base."}
+                        ? t("emptySliceFilter")
+                        : t("emptySliceOther")}
                     </p>
                     {(query.trim() || selection.kind !== "all") && (
                       <button
@@ -762,7 +758,7 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
                           selectAll();
                         }}
                       >
-                        Revenir à toute la base
+                        {t("backToAll")}
                       </button>
                     )}
                   </div>
@@ -778,6 +774,7 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
               {selected ? (
                 <ArtistDetail
                   artist={selected.artist}
+                  openLabel={openLabel}
                   onOpenParent={() => {
                     const parent = selected.artist.parent.trim();
                     if (parent) {
@@ -797,12 +794,9 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
                 />
               ) : (
                 <div className="knowledge-empty-slice">
-                  <p className="eyebrow">3 · Fiche</p>
-                  <h4>Sélectionne un artiste</h4>
-                  <p>
-                    Clique une ligne du tableau pour voir le genre, le
-                    sous-genre et l’utilité pour tes MP3.
-                  </p>
+                  <p className="eyebrow">{t("paneSheet")}</p>
+                  <h4>{t("pickArtist")}</h4>
+                  <p>{t("pickArtistBody")}</p>
                 </div>
               )}
             </div>
@@ -815,48 +809,48 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
 
 function ArtistDetail({
   artist,
+  openLabel,
   onOpenParent,
   onOpenSub,
 }: {
   artist: KnowledgeArtist;
+  openLabel: string;
   onOpenParent: () => void;
   onOpenSub: () => void;
 }) {
-  const parent = artist.parent.trim() || OPEN_LABEL;
+  const { t } = useTranslation("knowledge");
+  const parent = artist.parent.trim() || openLabel;
   const sub = resolvedSub(artist);
   const open = !artist.parent.trim();
-  const folder = genreFolder(artist);
+  const folder = genreFolder(artist, openLabel);
 
   return (
     <>
       <header className="plan-detail-header">
         <div>
-          <p className="plan-detail-kicker">3 · Fiche artiste</p>
+          <p className="plan-detail-kicker">{t("sheetKicker")}</p>
           <h4>{artist.name}</h4>
           <p className="plan-detail-path" title={folder}>
-            Dossier cible · {folder}
+            {t("targetFolder", { folder })}
           </p>
         </div>
         <div className="plan-detail-stats">
-          <span>
-            <strong>{artist.likes}</strong> like
-            {artist.likes > 1 ? "s" : ""}
-          </span>
+          <span>{t("likes", { count: artist.likes })}</span>
           <span className={open ? "knowledge-badge is-pending" : "knowledge-badge"}>
-            {open ? "À compléter" : "Classé"}
+            {open ? t("badgeOpen") : t("badgeSorted")}
           </span>
         </div>
       </header>
 
       <p className="knowledge-detail-lead">
         {open
-          ? "Pas encore de genre fiable. Lance le complément Spotify pour le remplir."
-          : `Dans Mes fichiers, les titres de ${artist.name} iront vers « ${folder} ».`}
+          ? t("leadOpen")
+          : t("leadSorted", { name: artist.name, folder })}
       </p>
 
       <dl className="knowledge-facts">
         <div>
-          <dt>Genre</dt>
+          <dt>{t("factGenre")}</dt>
           <dd>
             <button type="button" className="knowledge-linkish" onClick={onOpenParent}>
               {parent}
@@ -864,7 +858,7 @@ function ArtistDetail({
           </dd>
         </div>
         <div>
-          <dt>Sous-genre</dt>
+          <dt>{t("factSub")}</dt>
           <dd>
             {open ? (
               "—"
@@ -876,7 +870,7 @@ function ArtistDetail({
           </dd>
         </div>
         <div>
-          <dt>ID Spotify</dt>
+          <dt>{t("factSpotifyId")}</dt>
           <dd className="knowledge-mono" title={artist.spotifyId}>
             {artist.spotifyId.trim() || "—"}
           </dd>
@@ -885,8 +879,8 @@ function ArtistDetail({
 
       {artist.rawGenres.length > 0 ? (
         <>
-          <p className="knowledge-raw-label">Genres Spotify bruts</p>
-          <div className="artist-chips" aria-label="Genres Spotify bruts">
+          <p className="knowledge-raw-label">{t("rawGenres")}</p>
+          <div className="artist-chips" aria-label={t("rawGenres")}>
             {artist.rawGenres.map((genre) => (
               <span key={genre} className="artist-chip">
                 {genre}
@@ -895,16 +889,16 @@ function ArtistDetail({
           </div>
         </>
       ) : (
-        <p className="local-note">
-          Pas de genres bruts Spotify — d’où l’intérêt du complément et du dico
-          local.
-        </p>
+        <p className="local-note">{t("noRawGenres")}</p>
       )}
     </>
   );
 }
 
-function buildGenreTree(artists: ArtistRow[]): ParentNode[] {
+function buildGenreTree(
+  artists: ArtistRow[],
+  loc: "en-US" | "fr-FR",
+): ParentNode[] {
   const map = new Map<
     string,
     { count: number; likes: number; subs: Map<string, SubNode> }
@@ -949,13 +943,13 @@ function buildGenreTree(artists: ArtistRow[]): ParentNode[] {
       subs: [...value.subs.values()].sort(
         (a, b) =>
           b.count - a.count ||
-          a.sub.localeCompare(b.sub, "fr", { sensitivity: "base" }),
+          a.sub.localeCompare(b.sub, loc, { sensitivity: "base" }),
       ),
     }))
     .sort(
       (a, b) =>
         b.count - a.count ||
-        a.parent.localeCompare(b.parent, "fr", { sensitivity: "base" }),
+        a.parent.localeCompare(b.parent, loc, { sensitivity: "base" }),
     );
 }
 
@@ -991,16 +985,18 @@ function compareArtists(
   a: KnowledgeArtist,
   b: KnowledgeArtist,
   key: SortKey,
+  loc: "en-US" | "fr-FR",
+  openLabel: string,
 ): number {
   const byName = () =>
-    a.name.localeCompare(b.name, "fr", { sensitivity: "base" });
+    a.name.localeCompare(b.name, loc, { sensitivity: "base" });
 
   if (key === "likes") {
     return b.likes - a.likes || byName();
   }
   if (key === "sub") {
     return (
-      genreLabel(a).localeCompare(genreLabel(b), "fr", {
+      genreLabel(a, openLabel).localeCompare(genreLabel(b, openLabel), loc, {
         sensitivity: "base",
       }) || byName()
     );
@@ -1008,12 +1004,16 @@ function compareArtists(
   return byName();
 }
 
-function selectionTitle(selection: GenreSelection): string {
+function selectionTitle(
+  selection: GenreSelection,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+  openLabel: string,
+): string {
   if (selection.kind === "all") {
-    return "Toute la base";
+    return t("allBase");
   }
   if (selection.kind === "open") {
-    return OPEN_LABEL;
+    return openLabel;
   }
   if (selection.kind === "parent") {
     return selection.parent;
@@ -1023,7 +1023,7 @@ function selectionTitle(selection: GenreSelection): string {
       sensitivity: "base",
     }) === 0
   ) {
-    return `${selection.parent} · général`;
+    return t("generalSub", { sub: selection.parent });
   }
   return `${selection.parent} · ${selection.sub}`;
 }
@@ -1033,17 +1033,18 @@ function locationHint(
   count: number,
   openCount: number,
   coverage: number,
+  t: (key: string, opts?: Record<string, unknown>) => string,
 ): string {
   if (selection.kind === "open") {
-    return `${count} sans genre — à traiter via Spotify`;
+    return t("hintOpen", { count });
   }
   if (selection.kind === "all") {
-    return `Vue globale · ${coverage}% classés · ${openCount} en attente`;
+    return t("hintAll", { coverage, open: openCount });
   }
   if (selection.kind === "parent") {
-    return `${count} artiste${count > 1 ? "s" : ""} dans ce genre`;
+    return t("hintParent", { count });
   }
-  return `${count} artiste${count > 1 ? "s" : ""} dans ce sous-genre`;
+  return t("hintSub", { count });
 }
 
 function resolvedSub(artist: KnowledgeArtist): string {
@@ -1058,9 +1059,9 @@ function resolvedSub(artist: KnowledgeArtist): string {
   return rawSub;
 }
 
-function genreLabel(artist: KnowledgeArtist): string {
+function genreLabel(artist: KnowledgeArtist, openLabel: string): string {
   if (!artist.parent.trim()) {
-    return OPEN_LABEL;
+    return openLabel;
   }
   const sub = resolvedSub(artist);
   if (sub.localeCompare(artist.parent, undefined, { sensitivity: "base" }) === 0) {
@@ -1069,9 +1070,9 @@ function genreLabel(artist: KnowledgeArtist): string {
   return `${artist.parent} · ${sub}`;
 }
 
-function genreFolder(artist: KnowledgeArtist): string {
+function genreFolder(artist: KnowledgeArtist, openLabel: string): string {
   if (!artist.parent.trim()) {
-    return OPEN_LABEL;
+    return openLabel;
   }
   const sub = resolvedSub(artist);
   if (sub.localeCompare(artist.parent, undefined, { sensitivity: "base" }) === 0) {
@@ -1080,12 +1081,12 @@ function genreFolder(artist: KnowledgeArtist): string {
   return `${artist.parent}\\${sub}`;
 }
 
-function formatSyncedAt(value: string): string {
+function formatSyncedAt(value: string, loc: "en-US" | "fr-FR"): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return value;
   }
-  return date.toLocaleString("fr-FR", {
+  return date.toLocaleString(loc, {
     dateStyle: "medium",
     timeStyle: "short",
   });

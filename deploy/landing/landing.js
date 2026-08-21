@@ -81,10 +81,11 @@
   });
 
   if (!reduce) {
-    const floats = document.querySelectorAll(".float-ui [data-drift]");
+    const floats = document.querySelectorAll("[data-drift]");
     function tickFloat(now) {
       const t = now / 1000;
       floats.forEach((el, i) => {
+        if (el.id === "heroPlayer" && el.dataset.held === "1") return;
         const amp = Number(el.dataset.amp || 8);
         const spd = Number(el.dataset.spd || 0.35);
         const phase = i * 1.3;
@@ -104,6 +105,131 @@
     const s = Math.floor(secs % 60);
     return m + ":" + String(s).padStart(2, "0");
   }
+
+  /* —— Mini player hero (haut droite) —— */
+  (async function bootHeroPlayer() {
+    const root = document.getElementById("heroPlayer");
+    if (!root) return;
+    const playBtn = document.getElementById("heroPlayerPlay");
+    const prevBtn = document.getElementById("heroPlayerPrev");
+    const nextBtn = document.getElementById("heroPlayerNext");
+    const seek = document.getElementById("heroPlayerSeek");
+    const eq = document.getElementById("heroPlayerEq");
+    const titleEl = document.getElementById("heroPlayerTitle");
+    const artistEl = document.getElementById("heroPlayerArtist");
+    const folderEl = document.getElementById("heroPlayerFolder");
+    const curEl = document.getElementById("heroPlayerCur");
+    const durEl = document.getElementById("heroPlayerDur");
+
+    let clips = [];
+    try {
+      const res = await fetch("clips/clips.json", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        clips = (data.clips || []).filter((c) => c.file && c.title && !/^Remplace-moi/i.test(c.title));
+      }
+    } catch (_) {}
+    if (!clips.length) {
+      clips = [
+        {
+          title: "Wake Me Up",
+          artist: "Avicii",
+          folder: "Électro",
+          file: "06-wake-me-up.mp3",
+        },
+      ];
+    }
+
+    let idx = Math.max(
+      0,
+      clips.findIndex((c) => /wake-me-up|Wake Me Up/i.test(c.file || c.title)),
+    );
+    if (idx < 0) idx = 0;
+    const audio = new Audio();
+    audio.preload = "metadata";
+    audio.volume = 0.75;
+
+    function showMeta(c) {
+      if (folderEl) folderEl.textContent = c.folder || c.genre || "—";
+      if (titleEl) titleEl.textContent = c.title;
+      if (artistEl) artistEl.textContent = c.artist || "—";
+    }
+
+    function load(i, autoplay) {
+      idx = (i + clips.length) % clips.length;
+      const c = clips[idx];
+      showMeta(c);
+      audio.src = "clips/" + c.file;
+      audio.load();
+      if (seek) {
+        seek.value = "0";
+        seek.style.setProperty("--p", "0%");
+      }
+      if (curEl) curEl.textContent = "0:00";
+      if (eq) eq.classList.remove("is-on");
+      if (playBtn) playBtn.textContent = "Play";
+      if (autoplay) {
+        void audio.play().then(() => {
+          if (eq) eq.classList.add("is-on");
+          if (playBtn) playBtn.textContent = "Pause";
+        }).catch((err) => {
+          console.warn("hero play", err);
+          if (playBtn) playBtn.textContent = "Play";
+        });
+      }
+    }
+
+    function toggle() {
+      if (audio.paused) {
+        void audio.play().then(() => {
+          if (eq) eq.classList.add("is-on");
+          if (playBtn) playBtn.textContent = "Pause";
+        }).catch((err) => {
+          console.warn("hero play", err);
+          if (artistEl) artistEl.textContent = "Erreur lecture — clique encore";
+        });
+      } else {
+        audio.pause();
+        if (eq) eq.classList.remove("is-on");
+        if (playBtn) playBtn.textContent = "Play";
+      }
+    }
+
+    audio.addEventListener("timeupdate", () => {
+      const d = audio.duration || 0;
+      const c = audio.currentTime || 0;
+      const p = d > 0 ? (c / d) * 100 : 0;
+      if (seek) {
+        seek.max = String(Math.max(1, d));
+        seek.value = String(c);
+        seek.style.setProperty("--p", p + "%");
+      }
+      if (curEl) curEl.textContent = formatClock(c);
+    });
+    audio.addEventListener("durationchange", () => {
+      if (durEl) durEl.textContent = formatClock(audio.duration || 0);
+      if (seek) seek.max = String(Math.max(1, audio.duration || 1));
+    });
+    audio.addEventListener("ended", () => load(idx + 1, true));
+
+    playBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggle();
+    });
+    prevBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      load(idx - 1, true);
+    });
+    nextBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      load(idx + 1, true);
+    });
+    seek?.addEventListener("input", () => {
+      audio.currentTime = Number(seek.value);
+    });
+
+    load(idx, false);
+  })();
 
   /* —— Preview Live —— */
   const player = (() => {
@@ -168,14 +294,14 @@
         els.vol.style.setProperty("--p", volume * 100 + "%");
       }
       if (els.volPct) els.volPct.textContent = Math.round(volume * 100) + "%";
-      if (els.mute) els.mute.textContent = volume > 0 ? "Son" : "Muet";
+      if (els.mute) els.mute.textContent = volume > 0 ? "Sound" : "Mute";
     }
 
     function fillMeta(track) {
       const path = track.audio || ("clips/" + (track.file || ""));
       if (els.folder) els.folder.textContent = track.folder || track.genre || "—";
       if (els.title) els.title.textContent = track.title || track.file || "—";
-      if (els.artist) els.artist.textContent = track.artist || "Artiste inconnu";
+      if (els.artist) els.artist.textContent = track.artist || "Unknown artist";
       if (els.album) els.album.textContent = track.album || "—";
       if (els.year) els.year.textContent = track.year || "—";
       if (els.genre) els.genre.textContent = track.genre || track.folder || "—";
@@ -220,7 +346,7 @@
           if (els.error) {
             els.error.hidden = false;
             els.error.textContent =
-              "Fichier introuvable — dépose l’extrait dans /clips et vérifie clips.json.";
+              "File not found — add the clip to /clips and check clips.json.";
           }
         });
       }
@@ -254,7 +380,7 @@
         void audio.play().then(() => setPlayingUi(true)).catch(() => {
           if (els.error) {
             els.error.hidden = false;
-            els.error.textContent = "Impossible de lire ce titre.";
+            els.error.textContent = "Unable to play this track.";
           }
         });
       } else {
@@ -291,7 +417,7 @@
       if (els.error) {
         els.error.hidden = false;
         els.error.textContent =
-          "Fichier introuvable — dépose l’extrait dans /clips et vérifie clips.json.";
+          "File not found — add the clip to /clips and check clips.json.";
       }
     });
 
@@ -360,13 +486,13 @@
       { title: "Concrete Prayer", artist: "K-Line", folder: "Hip-Hop", dur: "2:58", file: "concrete_prayer.mp3" },
       { title: "Night Court", artist: "K-Line", folder: "Hip-Hop", dur: "3:21", file: "night_court.mp3" },
       { title: "Low Battery", artist: "Tape Run", folder: "Hip-Hop", dur: "2:47", file: "low_battery.m4a" },
-      { title: "Midnight Drive", artist: "Neon Coast", folder: "Électro", dur: "4:10", file: "midnight_drive.mp3" },
-      { title: "After Hours", artist: "Soft Circuit", folder: "Électro", dur: "5:33", file: "after_hours.wav" },
-      { title: "Gridlock", artist: "Soft Circuit", folder: "Électro", dur: "3:55", file: "gridlock.mp3" },
-      { title: "Pulse Map", artist: "Neon Coast", folder: "Électro", dur: "4:28", file: "pulse_map.flac" },
+      { title: "Midnight Drive", artist: "Neon Coast", folder: "Electro", dur: "4:10", file: "midnight_drive.mp3" },
+      { title: "After Hours", artist: "Soft Circuit", folder: "Electro", dur: "5:33", file: "after_hours.wav" },
+      { title: "Gridlock", artist: "Soft Circuit", folder: "Electro", dur: "3:55", file: "gridlock.mp3" },
+      { title: "Pulse Map", artist: "Neon Coast", folder: "Electro", dur: "4:28", file: "pulse_map.flac" },
       { title: "Harbor Lights", artist: "River Brass", folder: "Jazz", dur: "4:02", file: "harbor_lights.mp3" },
-      { title: "Untitled 07", artist: "Unknown", folder: "Sans genre", dur: "3:00", file: "untitled_07.mp3" },
-      { title: "Demo Track", artist: "Unknown", folder: "Sans genre", dur: "2:14", file: "demo_track.mp3" },
+      { title: "Untitled 07", artist: "Unknown", folder: "Uncategorized", dur: "3:00", file: "untitled_07.mp3" },
+      { title: "Demo Track", artist: "Unknown", folder: "Uncategorized", dur: "2:14", file: "demo_track.mp3" },
     ];
 
     let clips = [];
@@ -385,9 +511,9 @@
       .map((c) => ({
         id: c.id || c.file,
         title: c.title,
-        artist: c.artist || "Artiste inconnu",
-        folder: c.folder || c.genre || "Électro",
-        genre: c.genre || c.folder || "Électro",
+        artist: c.artist || "Unknown artist",
+        folder: c.folder || c.genre || "Electro",
+        genre: c.genre || c.folder || "Electro",
         dur: c.durationSecs ? formatClock(c.durationSecs) : "—",
         file: c.file,
         audio: "clips/" + c.file,
@@ -413,14 +539,14 @@
     const playableQueue = () => TRACKS.filter((t) => t.playable && t.audio);
 
     const SCAN_LINES = [
-      "On ouvre ton dossier sans toucher aux titres…",
-      "On repère les MP3, FLAC, M4A et compagnie…",
-      "Lecture des tags : artiste, titre, album…",
-      "Regroupement des titres par genre…",
-      "Préparation du plan de dossiers…",
+      "Opening your folder without touching the tracks…",
+      "Finding MP3, FLAC, M4A and friends…",
+      "Reading tags: artist, title, album…",
+      "Grouping tracks by genre…",
+      "Preparing the folder plan…",
     ];
 
-    const FOLDER_ORDER = ["Rock", "Jazz", "Hip-Hop", "Électro", "Sans genre"];
+    const FOLDER_ORDER = ["Rock", "Jazz", "Hip-Hop", "Electro", "Uncategorized"];
 
     const rootEl = document.getElementById("simLocal");
     if (!rootEl) return;
@@ -493,7 +619,7 @@
     function renderPlan() {
       const stats = folderStats();
       const total = TRACKS.length;
-      const classified = TRACKS.filter((t) => t.folder !== "Sans genre").length;
+      const classified = TRACKS.filter((t) => t.folder !== "Uncategorized").length;
       const pct = Math.round((classified / total) * 100);
       const ring = document.getElementById("simRing");
       const ringPct = document.getElementById("simRingPct");
@@ -502,7 +628,7 @@
       if (ringPct) ringPct.textContent = pct + "%";
       if (summary) {
         summary.textContent =
-          classified + " classés · " + (total - classified) + " sans genre";
+          classified + " sorted · " + (total - classified) + " uncategorized";
       }
       if (rootPathEl && selectedPath) rootPathEl.textContent = selectedPath;
 
@@ -521,7 +647,7 @@
         btn.className =
           "sim-folder" +
           (name === selectedFolder ? " is-active" : "") +
-          (name === "Sans genre" ? " is-warn" : "");
+          (name === "Uncategorized" ? " is-warn" : "");
         const w = Math.round((list.length / total) * 100);
         btn.innerHTML =
           '<div class="sim-folder-top"><span class="sim-folder-name">' +
@@ -553,7 +679,7 @@
           t.artist +
           "</span></div>" +
           (t.playable
-            ? '<span class="play-hint">écouter</span>'
+            ? '<span class="play-hint">listen</span>'
             : "<time>" + t.dur + "</time>");
         if (t.playable && player) {
           li.addEventListener("click", () => {
@@ -574,8 +700,8 @@
     function runScan() {
       stopScan();
       showStep("scan");
-      setStatus("Analyse…");
-      showToast("Analyse du dossier…", "Lecture seule — rien n’est déplacé", 3200);
+      setStatus("Analyzing…");
+      showToast("Analyzing folder…", "Read-only — nothing is moved", 3200);
 
       const total = TRACKS.length;
       let done = 0;
@@ -583,7 +709,7 @@
 
       if (barFill) barFill.style.width = "0%";
       if (percentEl) percentEl.textContent = "0%";
-      if (countEl) countEl.textContent = "0 / " + total + " titres";
+      if (countEl) countEl.textContent = "0 / " + total + " tracks";
       if (progressEl) progressEl.setAttribute("aria-valuenow", "0");
       if (termLine) termLine.textContent = SCAN_LINES[0];
       if (termFile) termFile.textContent = "";
@@ -595,7 +721,7 @@
         const pct = Math.min(100, Math.round((done / total) * 100));
         if (barFill) barFill.style.width = pct + "%";
         if (percentEl) percentEl.textContent = pct + "%";
-        if (countEl) countEl.textContent = done + " / " + total + " titres";
+        if (countEl) countEl.textContent = done + " / " + total + " tracks";
         if (progressEl) progressEl.setAttribute("aria-valuenow", String(pct));
 
         const t = TRACKS[done - 1];
@@ -610,11 +736,11 @@
         if (done >= total) {
           scanTimer = window.setTimeout(() => {
             showStep("plan");
-            setStatus(pct + "% classés");
-            const n = TRACKS.filter((x) => x.folder !== "Sans genre").length;
+            setStatus(pct + "% sorted");
+            const n = TRACKS.filter((x) => x.folder !== "Uncategorized").length;
             showToast(
-              "Plan prêt",
-              n + " titres rangés · " + (TRACKS.length - n) + " à corriger dans l’app",
+              "Plan ready",
+              n + " tracks sorted · " + (TRACKS.length - n) + " to fix in the app",
               3000,
             );
             renderPlan();
@@ -633,16 +759,16 @@
       selectedFolder = featured[0] ? featured[0].folder : "Rock";
       if (pickerOk) pickerOk.disabled = true;
       document.querySelectorAll("#simTree button").forEach((b) => b.classList.remove("is-sel"));
-      if (pickerPath) pickerPath.textContent = "Ce PC\\Utilisateurs\\Alex";
+      if (pickerPath) pickerPath.textContent = "This PC\\Users\\Alex";
       showStep("idle");
-      setStatus("Prêt");
+      setStatus("Ready");
       if (toastEl) toastEl.classList.remove("is-on");
       if (player) player.closePlayer();
     }
 
     document.getElementById("simOpenPicker")?.addEventListener("click", () => {
       showStep("picker");
-      setStatus("Choisir un dossier");
+      setStatus("Choose a folder");
     });
     document.getElementById("simPickerCancel")?.addEventListener("click", resetDemo);
     document.getElementById("simReplay")?.addEventListener("click", resetDemo);
@@ -653,7 +779,7 @@
       const path = btn.dataset.path;
       if (!path) return;
       if (pickerPath) {
-        pickerPath.textContent = path.replace(/^C:\\Users\\Alex/, "Ce PC\\Utilisateurs\\Alex");
+        pickerPath.textContent = path.replace(/^C:\\Users\\Alex/, "This PC\\Users\\Alex");
       }
       document.querySelectorAll("#simTree button").forEach((b) => b.classList.remove("is-sel"));
       btn.classList.add("is-sel");

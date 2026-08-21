@@ -70,13 +70,15 @@ jobs:
           tagName: v__VERSION__
           releaseName: BassOrder v__VERSION__
           releaseBody: |
-            Installateurs BassOrder.
+            BassOrder installers.
 
-            - **Windows** : `.msi` ou `.exe`
-            - **macOS** : `.dmg` (Apple Silicon + Intel) — non signé pour l’instant (Gatekeeper peut avertir)
+            - **Windows**: `.msi` or `.exe`
+            - **macOS**: `.dmg` (Apple Silicon + Intel) — unsigned for now (Gatekeeper may warn)
 
-            Landing : https://bassorder.smegg.cloud
-            API : https://api.bassorder.smegg.cloud/health
+            Includes EN/FR UI (language in Settings; auto-detect on first launch).
+
+            Landing: https://bassorder.smegg.cloud
+            API: https://api.bassorder.smegg.cloud/health
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}

@@ -1,0 +1,16 @@
+{
+  "appName": "BassOrder",
+  "close": "Fermer",
+  "cancel": "Annuler",
+  "retry": "Réessayer",
+  "loading": "Chargement…",
+  "opening": "Ouverture…",
+  "profile": "Profil",
+  "search": "Recherche",
+  "active": "Actif",
+  "justNow": "à l’instant",
+  "minutesAgo": "il y a {{count}} min",
+  "hoursAgo": "il y a {{count}} h",
+  "spotifyAccount": "Compte Spotify",
+  "unknownArtist": "Artiste inconnu"
+}

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { intlLocale, type AppLocale } from "../i18n";
 import { PushFill } from "../ui/push";
 import { TermMorphCaret } from "../ui/TermMorphCaret";
 import type { SpotifySyncProgress } from "./types";
@@ -30,75 +32,25 @@ const PHASE_SPAN: Record<string, { start: number; weight: number }> = {
   done: { start: 1, weight: 0 },
 };
 
-/** Phrases d’ambiance — une banque par étape, pour que ça “vit” même si Spotify est lent. */
-const TIPS: Record<string, string[]> = {
-  sync: [
-    "On ouvre ta bibliothèque likée, page après page…",
-    "Chaque like nourrit le dictionnaire d’artistes.",
-    "Aucun fichier sur ton PC n’est touché pour l’instant.",
-    "Plus tu as de likes, plus la première passe est longue — c’est normal.",
-    "Ensuite on pourra compléter les genres manquants automatiquement.",
-    "Tu peux changer d’écran : l’import continue en fond.",
-    "On ne lit que ce que Spotify expose à l’app — rien n’est modifié sur ton compte.",
-    "Les doublons d’artistes sont fusionnés au fil de l’eau.",
-  ],
-  enrich: [
-    "Lecture seule : ton compte Spotify n’est pas modifié.",
-    "Quatre étapes : Spotify → liés+dico → iTunes/Deezer → MusicBrainz.",
-    "Tu peux changer de page : le complément continue en fond.",
-    "Un artiste classé = tous ses likes rangés d’un coup.",
-    "Laisse tourner — plusieurs milliers d’artistes, ça prend du temps.",
-    "Rien n’est écrit dans tes dossiers Windows pendant cette étape.",
-  ],
-  artists: [
-    "Spotify bride les apps développeur : on interroge artiste par artiste.",
-    "Le lot groupé a souvent échoué — bascule en mode unitaire, plus fiable.",
-    "Chaque fiche ramène le nom officiel et, parfois, les genres bruts.",
-    "Beaucoup d’artistes ont une liste de genres vide côté API — on rattrape après.",
-    "La file avance même si le pourcentage reste bas au début.",
-    "Pas d’écriture locale : on remplit seulement le dictionnaire en mémoire.",
-    "Si Spotify throttle, on ralentit automatiquement — patience.",
-    "Les artistes déjà classés sont ignorés pour gagner du temps.",
-    "Objectif de cette étape : récupérer ce que Spotify veut bien donner.",
-    "Ensuite on croisera avec les artistes proches pour combler les trous.",
-  ],
-  related: [
-    "Quand la fiche est vide, on regarde les artistes liés pour voter un style.",
-    "Plusieurs voisins du même genre = signal plus fiable.",
-    "Toujours en lecture seule — Spotify n’est pas modifié.",
-    "Cette passe sauve souvent les dumps YouTube / mixtapes sans tags.",
-    "On ne force rien : si le signal est trop faible, on passe au catalogue.",
-    "Les liens Spotify ressemblent à une carte de goûts — on s’en sert.",
-    "Progression visible artiste après artiste.",
-  ],
-  catalog: [
-    "Dernière passe catalogue : iTunes et Deezer pour les artistes encore flous.",
-    "Les catalogues publics comblent ce que l’API Spotify laisse vide.",
-    "On demande le genre principal, puis on le mappe vers un dossier BassOrder.",
-    "Les échecs sont mémorisés pour ne pas reposer la même question en boucle.",
-    "Ensuite MusicBrainz pour les plus likés encore « À classer ».",
-    "Lecture réseau uniquement : tes MP3 restent où ils sont.",
-  ],
-  musicbrainz: [
-    "MusicBrainz : tags communautaires, ~1 artiste / seconde (politesse serveur).",
-    "On priorise les artistes que tu like le plus.",
-    "Pas besoin de rester sur cet écran — ça continue en fond.",
-    "Après ça, actualise Mes fichiers puis « Deviner les genres ».",
-  ],
-  done: [
-    "Dictionnaire enregistré sur ton PC.",
-    "Tu peux maintenant actualiser l’analyse de Mes fichiers.",
-  ],
-};
-
-const ENRICH_STEPS = [
-  { id: "artists", label: "1 · Fiches Spotify" },
-  { id: "related", label: "2 · Artistes proches" },
-  { id: "catalog", label: "3 · Catalogues" },
-  { id: "musicbrainz", label: "4 · MusicBrainz" },
+const TIP_BANK_KEYS = [
+  "sync",
+  "enrich",
+  "artists",
+  "related",
+  "catalog",
+  "musicbrainz",
+  "done",
 ] as const;
 
 export function SpotifyActivityFeed({ mode, progress, startedAt }: Props) {
+  const { t, i18n } = useTranslation("spotify");
+  const loc = intlLocale((i18n.language.startsWith("fr") ? "fr" : "en") as AppLocale);
+  const enrichSteps = [
+    { id: "artists" as const, label: t("feedStep1") },
+    { id: "related" as const, label: t("feedStep2") },
+    { id: "catalog" as const, label: t("feedStep3") },
+    { id: "musicbrainz" as const, label: t("feedStep4") },
+  ];
   const [tipIndex, setTipIndex] = useState(0);
   const [typed, setTyped] = useState("");
   const [now, setNow] = useState(() => Date.now());
@@ -107,7 +59,14 @@ export function SpotifyActivityFeed({ mode, progress, startedAt }: Props) {
   const rateSamples = useRef<{ t: number; overall: number }[]>([]);
 
   const phaseKey = useMemo(() => resolveTipBank(mode, progress?.phase), [mode, progress?.phase]);
-  const tips = TIPS[phaseKey] ?? TIPS.enrich;
+  const tips = useMemo(() => {
+    const bank = t(`tipBank.${phaseKey}`, { returnObjects: true });
+    if (Array.isArray(bank) && bank.every((line) => typeof line === "string")) {
+      return bank as string[];
+    }
+    const fallback = t("tipBank.enrich", { returnObjects: true });
+    return Array.isArray(fallback) ? (fallback as string[]) : [];
+  }, [t, phaseKey, i18n.language]);
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 1000);
@@ -126,7 +85,7 @@ export function SpotifyActivityFeed({ mode, progress, startedAt }: Props) {
     return () => window.clearInterval(id);
   }, [phaseKey]);
 
-  const phaseInfo = useMemo(() => describePhase(mode, progress), [mode, progress]);
+  const phaseInfo = useMemo(() => describePhase(mode, progress, t), [mode, progress, t]);
   const liveLabel = progress?.label?.trim() || phaseInfo.headline;
 
   useEffect(() => {
@@ -172,9 +131,9 @@ export function SpotifyActivityFeed({ mode, progress, startedAt }: Props) {
     if (rawPercent == null) {
       return;
     }
-    const t = Date.now();
-    rateSamples.current.push({ t, overall: rawPercent });
-    rateSamples.current = rateSamples.current.filter((s) => t - s.t < 45_000);
+    const sampleAt = Date.now();
+    rateSamples.current.push({ t: sampleAt, overall: rawPercent });
+    rateSamples.current = rateSamples.current.filter((s) => sampleAt - s.t < 45_000);
   }, [rawPercent]);
 
   const percent = rawPercent == null ? null : Math.round(smoothPct);
@@ -203,15 +162,19 @@ export function SpotifyActivityFeed({ mode, progress, startedAt }: Props) {
     return formatDuration(Math.min(remainingSec, 3_600));
   }, [rawPercent, elapsedSec, now]);
 
-  const activeTip = tips[tipIndex % tips.length];
+  const tipCount = Math.max(tips.length, 1);
+  const activeTip = tips.length > 0 ? tips[tipIndex % tips.length] : "";
   const recentTips = useMemo(() => {
+    if (tips.length === 0) {
+      return [] as string[];
+    }
     const out: string[] = [];
     for (let i = 2; i >= 0; i -= 1) {
-      const idx = (tipIndex - i + tips.length * 8) % tips.length;
+      const idx = (tipIndex - i + tipCount * 8) % tipCount;
       out.push(tips[idx]);
     }
     return out;
-  }, [tipIndex, tips]);
+  }, [tipIndex, tips, tipCount]);
 
   const waiting =
     Boolean(progress && progress.total > 0 && progress.done === 0 && elapsedSec >= 8);
@@ -239,8 +202,8 @@ export function SpotifyActivityFeed({ mode, progress, startedAt }: Props) {
         <p className="analysis-sub">{phaseInfo.subtitle}</p>
 
         {mode === "enrich" && (
-          <ol className="spotify-phase-steps" aria-label="Étapes du complément">
-            {ENRICH_STEPS.map((step) => {
+          <ol className="spotify-phase-steps" aria-label={t("feedStepsAria")}>
+            {enrichSteps.map((step) => {
               const state = stepState(step.id, progress?.phase);
               return (
                 <li key={step.id} className={`is-${state}`}>
@@ -257,7 +220,7 @@ export function SpotifyActivityFeed({ mode, progress, startedAt }: Props) {
             <i />
             <i />
             <i />
-            <span>{mode === "enrich" ? "bassorder · complément" : "bassorder · import"}</span>
+            <span>{mode === "enrich" ? t("feedTermEnrich") : t("feedTermImport")}</span>
           </div>
           <div className="analysis-term-body">
             <p className="analysis-term-line">
@@ -267,14 +230,11 @@ export function SpotifyActivityFeed({ mode, progress, startedAt }: Props) {
             </p>
             <p className="analysis-term-detail">
               {progress && progress.total > 0
-                ? `${progress.done.toLocaleString("fr-FR")} / ${progress.total.toLocaleString("fr-FR")} · ${phaseInfo.hint}`
+                ? `${progress.done.toLocaleString(loc)} / ${progress.total.toLocaleString(loc)} · ${phaseInfo.hint}`
                 : phaseInfo.hint}
             </p>
             {waiting && (
-              <p className="analysis-term-wait">
-                Spotify répond lentement — l’horloge tourne, la file est en cours.
-                Première avance visible dès qu’une fiche revient.
-              </p>
+              <p className="analysis-term-wait">{t("feedWaitingSlow")}</p>
             )}
           </div>
         </div>
@@ -298,16 +258,16 @@ export function SpotifyActivityFeed({ mode, progress, startedAt }: Props) {
           {percent != null ? (
             <strong>{percent}%</strong>
           ) : (
-            <strong className="is-pulse">En cours</strong>
+            <strong className="is-pulse">{t("feedInProgress")}</strong>
           )}
           <span>
-            {formatDuration(elapsedSec)} écoulé
-            {etaLabel ? ` · ~${etaLabel} restantes` : ""}
+            {formatDuration(elapsedSec)}
+            {etaLabel ? t("feedEtaLeft", { eta: etaLabel }) : ""}
           </span>
         </div>
 
         <div className="analysis-log" key={`${phaseKey}-${logPulse}`}>
-          <p className="analysis-log-kicker">Journal live</p>
+          <p className="analysis-log-kicker">{t("feedJournal")}</p>
           <ul className="analysis-log-lines">
             {recentTips.map((line, index) => {
               const isCurrent = index === recentTips.length - 1;
@@ -357,7 +317,7 @@ function resolveTipBank(mode: Mode, phase: string | undefined): string {
   if (key === "itunes") {
     return "catalog";
   }
-  if (key in TIPS) {
+  if ((TIP_BANK_KEYS as readonly string[]).includes(key)) {
     return key;
   }
   return "enrich";
@@ -392,63 +352,63 @@ function stepState(
   return "todo";
 }
 
-function describePhase(mode: Mode, progress: SpotifySyncProgress | null) {
+function describePhase(
+  mode: Mode,
+  progress: SpotifySyncProgress | null,
+  t: (key: string) => string,
+) {
   if (mode === "sync") {
     return {
-      eyebrow: "Import Spotify",
-      title: "Import de tes titres likés",
-      subtitle: "On construit le dictionnaire d’artistes à partir de ton compte.",
-      headline: "Lecture de ta bibliothèque likée…",
-      hint: "Patience — un gros compte = plus de pages à charger.",
+      eyebrow: t("feedSyncEyebrow"),
+      title: t("feedSyncTitle"),
+      subtitle: t("feedSyncSubtitle"),
+      headline: t("feedSyncHeadline"),
+      hint: t("feedSyncHint"),
     };
   }
 
   switch (progress?.phase) {
     case "related":
       return {
-        eyebrow: "Complément · étape 2/4",
-        title: "Artistes proches + ton dico",
-        subtitle:
-          "Spotify ne donne plus les genres : on regarde les artistes liés, et on propage les dossiers déjà classés dans ton dictionnaire.",
-        headline: "Croisement réseau + dico local…",
-        hint: "Lecture seule — rien n’est modifié sur ton compte.",
+        eyebrow: t("feedRelatedEyebrow"),
+        title: t("feedRelatedTitle"),
+        subtitle: t("feedRelatedSubtitle"),
+        headline: t("feedRelatedHeadline"),
+        hint: t("feedRelatedHint"),
       };
     case "catalog":
     case "itunes":
       return {
-        eyebrow: "Complément · étape 3/4",
-        title: "Catalogues publics",
-        subtitle:
-          "Passe iTunes / Deezer pour les artistes encore sans dossier.",
-        headline: "Recherche dans les catalogues…",
-        hint: "Ensuite MusicBrainz pour le reste prioritaire.",
+        eyebrow: t("feedCatalogEyebrow"),
+        title: t("feedCatalogTitle"),
+        subtitle: t("feedCatalogSubtitle"),
+        headline: t("feedCatalogHeadline"),
+        hint: t("feedCatalogHint"),
       };
     case "musicbrainz":
       return {
-        eyebrow: "Complément · étape 4/4",
-        title: "MusicBrainz",
-        subtitle:
-          "Tags communautaires MusicBrainz — lent (~1 artiste/s) mais utile quand Spotify est vide.",
-        headline: "Tags MusicBrainz…",
-        hint: "Priorité aux artistes les plus likés encore « À classer ».",
+        eyebrow: t("feedMbEyebrow"),
+        title: t("feedMbTitle"),
+        subtitle: t("feedMbSubtitle"),
+        headline: t("feedMbHeadline"),
+        hint: t("feedMbHint"),
       };
     case "done":
       return {
-        eyebrow: "Complément terminé",
-        title: "Dictionnaire à jour",
-        subtitle: "On enregistre le résultat sur ton PC.",
-        headline: "Enregistrement local…",
-        hint: "Encore une seconde.",
+        eyebrow: t("feedDoneEyebrow"),
+        title: t("feedDoneTitle"),
+        subtitle: t("feedDoneSubtitle"),
+        headline: t("feedDoneHeadline"),
+        hint: t("feedDoneHint"),
       };
     case "artists":
     default:
       return {
-        eyebrow: "Complément · étape 1/4",
-        title: "Fiches artistes Spotify",
-        subtitle:
-          "On demande les fiches Spotify. Attention : le champ genres est souvent vide depuis 2025 — ce n’est pas un bug BassOrder.",
-        headline: "Interrogation des fiches artistes…",
-        hint: "Laisse tourner — la première avance peut prendre une minute.",
+        eyebrow: t("feedArtistsEyebrow"),
+        title: t("feedArtistsTitle"),
+        subtitle: t("feedArtistsSubtitle"),
+        headline: t("feedArtistsHeadline"),
+        hint: t("feedArtistsHint"),
       };
   }
 }

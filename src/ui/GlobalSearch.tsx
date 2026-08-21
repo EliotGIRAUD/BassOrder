@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { intlLocale, type AppLocale } from "../i18n";
 import { listLibraries } from "../local/libraryCache";
 import { setActiveImport, listImports } from "../spotify/importCache";
 import { activateSpotifyProfile } from "../spotify/api";
@@ -15,6 +17,7 @@ import {
 import { requestOpenAnalysis } from "../local/historyEvents";
 import { fetchKnowledgeDump } from "../knowledge/api";
 import { SearchHitsSkeleton } from "./skeleton";
+import { usePrefs } from "./prefs";
 
 export type AppView =
   | "home"
@@ -40,64 +43,71 @@ type Props = {
   onNavigate: (view: AppView) => void;
 };
 
-const NAV_ITEMS: { view: AppView; title: string; subtitle: string; keywords: string }[] = [
-  {
-    view: "home",
-    title: "Accueil",
-    subtitle: "Vue d’ensemble BassOrder",
-    keywords: "home démarrer",
-  },
-  {
-    view: "local",
-    title: "Mes fichiers",
-    subtitle: "Analyser et classer la musique sur ton PC",
-    keywords: "local dossier mp3 bibliothèque",
-  },
-  {
-    view: "localHistory",
-    title: "Historique local",
-    subtitle: "Analyses de dossiers déjà faites",
-    keywords: "historique analyses",
-  },
-  {
-    view: "spotify",
-    title: "Spotify",
-    subtitle: "Importer les likes d’un profil",
-    keywords: "cloud likes import",
-  },
-  {
-    view: "spotifyHistory",
-    title: "Historique Spotify",
-    subtitle: "Imports mémorisés par profil",
-    keywords: "historique imports",
-  },
-  {
-    view: "knowledge",
-    title: "Dictionnaire",
-    subtitle: "Artistes et genres du profil actif",
-    keywords: "savoir base artistes genres",
-  },
-  {
-    view: "profile",
-    title: "Profil",
-    subtitle: "Pseudo, couleur et espace perso",
-    keywords: "compte utilisateur session pseudo avatar",
-  },
-  {
-    view: "account",
-    title: "Compte",
-    subtitle: "Login local & cloud, favoris, sync",
-    keywords: "cloud login oauth favoris sync sécurité pin",
-  },
-];
-
 export function GlobalSearch({ open, onClose, onNavigate }: Props) {
+  const { t, i18n } = useTranslation("search");
+  const { t: tc } = useTranslation("common");
+  const { prefs } = usePrefs();
+  const locale = intlLocale(prefs.locale);
   const [query, setQuery] = useState("");
   const [index, setIndex] = useState(0);
   const [artists, setArtists] = useState<{ name: string; genre: string }[]>([]);
   const [genres, setGenres] = useState<string[]>([]);
   const [indexing, setIndexing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const navItems = useMemo(
+    () => [
+      {
+        view: "home" as const,
+        title: t("navHomeTitle"),
+        subtitle: t("navHomeSubtitle"),
+        keywords: "home démarrer",
+      },
+      {
+        view: "local" as const,
+        title: t("navLocalTitle"),
+        subtitle: t("navLocalSubtitle"),
+        keywords: "local dossier mp3 bibliothèque",
+      },
+      {
+        view: "localHistory" as const,
+        title: t("navLocalHistoryTitle"),
+        subtitle: t("navLocalHistorySubtitle"),
+        keywords: "historique analyses",
+      },
+      {
+        view: "spotify" as const,
+        title: t("navSpotifyTitle"),
+        subtitle: t("navSpotifySubtitle"),
+        keywords: "cloud likes import",
+      },
+      {
+        view: "spotifyHistory" as const,
+        title: t("navSpotifyHistoryTitle"),
+        subtitle: t("navSpotifyHistorySubtitle"),
+        keywords: "historique imports",
+      },
+      {
+        view: "knowledge" as const,
+        title: t("navKnowledgeTitle"),
+        subtitle: t("navKnowledgeSubtitle"),
+        keywords: "savoir base artistes genres",
+      },
+      {
+        view: "profile" as const,
+        title: t("navProfileTitle"),
+        subtitle: t("navProfileSubtitle"),
+        keywords: "compte utilisateur session pseudo avatar",
+      },
+      {
+        view: "account" as const,
+        title: t("navAccountTitle"),
+        subtitle: t("navAccountSubtitle"),
+        keywords: "cloud login oauth favoris sync sécurité pin",
+      },
+    ],
+    [t, i18n.language],
+  );
 
   useEffect(() => {
     if (!open) {
@@ -107,27 +117,28 @@ export function GlobalSearch({ open, onClose, onNavigate }: Props) {
     setIndex(0);
     setIndexing(true);
     window.setTimeout(() => inputRef.current?.focus(), 20);
+    const noGenre = t("noGenre");
     void fetchKnowledgeDump()
       .then((dump) => {
         const rows = Object.values(dump.artists).map((artist) => ({
           name: artist.name,
-          genre: [artist.parent, artist.sub].filter(Boolean).join(" · ") || "Sans genre",
+          genre: [artist.parent, artist.sub].filter(Boolean).join(" · ") || noGenre,
         }));
         setArtists(rows);
         const genreSet = new Set<string>();
         for (const row of rows) {
-          if (row.genre && row.genre !== "Sans genre") {
+          if (row.genre && row.genre !== noGenre) {
             genreSet.add(row.genre);
           }
         }
-        setGenres([...genreSet].sort((a, b) => a.localeCompare(b, "fr")));
+        setGenres([...genreSet].sort((a, b) => a.localeCompare(b, locale)));
       })
       .catch(() => {
         setArtists([]);
         setGenres([]);
       })
       .finally(() => setIndexing(false));
-  }, [open]);
+  }, [open, t, locale]);
 
   const hits = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -137,7 +148,7 @@ export function GlobalSearch({ open, onClose, onNavigate }: Props) {
     const active = getActiveProfile();
     const out: SearchHit[] = [];
 
-    for (const item of NAV_ITEMS) {
+    for (const item of navItems) {
       if (
         !q ||
         item.title.toLowerCase().includes(q) ||
@@ -163,9 +174,11 @@ export function GlobalSearch({ open, onClose, onNavigate }: Props) {
           title: profile.name,
           subtitle: [
             profile.displayName,
-            profile.id === active?.id ? "actif" : null,
-            profile.likedCount ? `${profile.likedCount} likes` : null,
-            "session & dictionnaire séparés",
+            profile.id === active?.id ? t("profileActive") : null,
+            profile.likedCount
+              ? t("profileLikes", { count: profile.likedCount })
+              : null,
+            t("profileSessions"),
           ]
             .filter(Boolean)
             .join(" · "),
@@ -186,8 +199,12 @@ export function GlobalSearch({ open, onClose, onNavigate }: Props) {
         out.push({
           id: `import-${item.id}`,
           kind: "import",
-          title: `Import · ${item.profileName}`,
-          subtitle: `${item.likedCount} likes · ${item.groupCount} genres · ${formatWhen(item.savedAt)}`,
+          title: t("importTitle", { name: item.profileName }),
+          subtitle: t("importSubtitle", {
+            likes: item.likedCount,
+            genres: item.groupCount,
+            when: formatWhen(item.savedAt, prefs.locale),
+          }),
           run: async () => {
             const profile = selectProfile(item.profileId);
             await activateSpotifyProfile(item.profileId);
@@ -210,7 +227,11 @@ export function GlobalSearch({ open, onClose, onNavigate }: Props) {
           id: `lib-${lib.id}`,
           kind: "library",
           title: shortPath(lib.root),
-          subtitle: `${lib.fileCount} titres · ${lib.sortedPercent}% classés · ${formatWhen(lib.savedAt)}`,
+          subtitle: t("librarySubtitle", {
+            tracks: lib.fileCount,
+            percent: lib.sortedPercent,
+            when: formatWhen(lib.savedAt, prefs.locale),
+          }),
           run: () => {
             requestOpenAnalysis(lib);
             onNavigate("local");
@@ -226,7 +247,9 @@ export function GlobalSearch({ open, onClose, onNavigate }: Props) {
             id: `genre-${genre}`,
             kind: "genre",
             title: genre,
-            subtitle: `Genre du dictionnaire (${active?.name ?? "profil actif"})`,
+            subtitle: t("genreSubtitle", {
+              profile: active?.name ?? t("activeProfileFallback"),
+            }),
             run: () => onNavigate("knowledge"),
           });
         }
@@ -251,7 +274,7 @@ export function GlobalSearch({ open, onClose, onNavigate }: Props) {
     }
 
     return out.slice(0, 40);
-  }, [query, artists, genres, onNavigate]);
+  }, [query, artists, genres, onNavigate, navItems, t, prefs.locale]);
 
   useEffect(() => {
     setIndex(0);
@@ -294,9 +317,26 @@ export function GlobalSearch({ open, onClose, onNavigate }: Props) {
     return null;
   }
 
+  function kindLabel(kind: SearchHit["kind"]): string {
+    switch (kind) {
+      case "nav":
+        return t("kindPage");
+      case "profile":
+        return t("kindProfile");
+      case "import":
+        return t("kindImport");
+      case "library":
+        return t("kindLibrary");
+      case "artist":
+        return t("kindArtist");
+      case "genre":
+        return t("kindGenre");
+    }
+  }
+
   return (
-    <div className="global-search" role="dialog" aria-modal="true" aria-label="Recherche BassOrder">
-      <button type="button" className="global-search-backdrop" onClick={onClose} aria-label="Fermer" />
+    <div className="global-search" role="dialog" aria-modal="true" aria-label={t("dialogAria")}>
+      <button type="button" className="global-search-backdrop" onClick={onClose} aria-label={tc("close")} />
       <div className="global-search-panel">
         <header className="global-search-head">
           <input
@@ -304,15 +344,13 @@ export function GlobalSearch({ open, onClose, onNavigate }: Props) {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Rechercher un profil, artiste, dossier, page…"
-            aria-label="Recherche"
+            placeholder={t("placeholder")}
+            aria-label={t("inputAria")}
           />
           <kbd>Esc</kbd>
         </header>
         <p className="global-search-hint">
-          {indexing
-            ? "Indexation du dictionnaire…"
-            : "Profils Spotify séparés · dictionnaire du profil actif · Ctrl+K pour rouvrir"}
+          {indexing ? t("indexing") : t("hint")}
         </p>
         {hits.length > 0 && (
           <ul className="global-search-list" role="listbox">
@@ -338,28 +376,11 @@ export function GlobalSearch({ open, onClose, onNavigate }: Props) {
         )}
         {indexing && <SearchHitsSkeleton rows={query.trim().length >= 2 ? 5 : 3} />}
         {!indexing && hits.length === 0 && (
-          <p className="global-search-empty">Aucun résultat pour « {query} ».</p>
+          <p className="global-search-empty">{t("empty", { query })}</p>
         )}
       </div>
     </div>
   );
-}
-
-function kindLabel(kind: SearchHit["kind"]): string {
-  switch (kind) {
-    case "nav":
-      return "Page";
-    case "profile":
-      return "Profil";
-    case "import":
-      return "Import";
-    case "library":
-      return "Dossier";
-    case "artist":
-      return "Artiste";
-    case "genre":
-      return "Genre";
-  }
 }
 
 function shortPath(path: string): string {
@@ -367,9 +388,9 @@ function shortPath(path: string): string {
   return parts.slice(-2).join(" / ") || path;
 }
 
-function formatWhen(ts: number): string {
+function formatWhen(ts: number, locale: AppLocale): string {
   try {
-    return new Intl.DateTimeFormat("fr-FR", {
+    return new Intl.DateTimeFormat(intlLocale(locale), {
       day: "numeric",
       month: "short",
       hour: "2-digit",

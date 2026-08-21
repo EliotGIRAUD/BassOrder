@@ -5,6 +5,7 @@ import {
   type CSSProperties,
   type FormEvent,
 } from "react";
+import { useTranslation } from "react-i18next";
 import { LiveAvatar } from "./LiveAvatar";
 import { USER_COLORS } from "./types";
 import { useUserSession } from "./UserSession";
@@ -22,6 +23,8 @@ type Props = {
  * Plus de grille Netflix / multi-profils.
  */
 export function UserGate({ onUnlockStart, onUnlocked }: Props) {
+  const { t } = useTranslation("gate");
+  const { t: tc } = useTranslation("common");
   const session = useUserSession();
   const rootRef = useRef<HTMLDivElement>(null);
   const [name, setName] = useState("");
@@ -58,14 +61,14 @@ export function UserGate({ onUnlockStart, onUnlocked }: Props) {
       try {
         const status = await localAuthStatus(sole.id);
         if (status.hasPassword) {
-          const pin = window.prompt(`PIN / mot de passe pour ${sole.name}`);
+          const pin = window.prompt(t("pinPrompt", { name: sole.name }));
           if (pin == null) {
             setLockedOut(true);
             return;
           }
           const ok = await localAuthVerify(sole.id, pin);
           if (!ok) {
-            window.alert("PIN / mot de passe incorrect.");
+            window.alert(t("pinWrong"));
             setLockedOut(true);
             return;
           }
@@ -124,22 +127,22 @@ export function UserGate({ onUnlockStart, onUnlocked }: Props) {
       </div>
 
       <div className="user-gate-panel">
-        <p className="eyebrow user-gate-eyebrow">BassOrder</p>
+        <p className="eyebrow user-gate-eyebrow">{tc("appName")}</p>
         <h1 className="user-gate-title">
           {!session.ready
-            ? "Chargement…"
+            ? t("titleLoading")
             : needsCreate
-              ? "Bienvenue"
+              ? t("titleWelcome")
               : busy
-                ? `Salut ${sole?.name ?? ""}`
-                : "Déverrouillage…"}
+                ? t("titleHello", { name: sole?.name ?? "" })
+                : t("titleUnlocking")}
         </h1>
         <p className="user-gate-lede">
           {!session.ready
-            ? "On prépare ton espace…"
+            ? t("ledeLoading")
             : needsCreate
-              ? "Un pseudo, une couleur — ensuite Spotify (ou tes fichiers) pour classer ta musique."
-              : "Ouverture de ton espace…"}
+              ? t("ledeCreate")
+              : t("ledeOpening")}
         </p>
 
         {session.ready && needsCreate && (
@@ -155,16 +158,16 @@ export function UserGate({ onUnlockStart, onUnlocked }: Props) {
                 name={name.trim() || "?"}
                 color={color}
                 size="xl"
-                title="Aperçu de ton avatar"
+                title={t("avatarPreviewTitle")}
               />
             </div>
 
             <label>
-              <span>Ton pseudo</span>
+              <span>{t("pseudoLabel")}</span>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="ex. Eliot"
+                placeholder={t("pseudoPlaceholder")}
                 autoFocus
                 maxLength={24}
                 minLength={2}
@@ -173,7 +176,7 @@ export function UserGate({ onUnlockStart, onUnlocked }: Props) {
               />
             </label>
 
-            <div className="user-gate-colors" role="listbox" aria-label="Couleur">
+            <div className="user-gate-colors" role="listbox" aria-label={t("colorAria")}>
               {USER_COLORS.map((c) => (
                 <button
                   key={c}
@@ -192,7 +195,7 @@ export function UserGate({ onUnlockStart, onUnlocked }: Props) {
               className="btn-primary user-gate-submit"
               disabled={busy || name.trim().length < 2}
             >
-              {busy ? "Ouverture…" : "Allumer BassOrder"}
+              {busy ? t("hintBusy") : t("submit")}
             </button>
           </form>
         )}
@@ -214,10 +217,10 @@ export function UserGate({ onUnlockStart, onUnlocked }: Props) {
             )}
             <p className="user-gate-hint" style={{ margin: 0 }}>
               {busy
-                ? "Ouverture…"
+                ? t("hintBusy")
                 : lockedOut
-                  ? "Entre ton PIN pour continuer."
-                  : "Un instant…"}
+                  ? t("hintNeedPin")
+                  : t("hintWait")}
             </p>
             {lockedOut && (
               <button
@@ -225,10 +228,10 @@ export function UserGate({ onUnlockStart, onUnlocked }: Props) {
                 className="btn-primary user-gate-submit"
                 onClick={() => {
                   setLockedOut(false);
-                  setEnterTick((t) => t + 1);
+                  setEnterTick((tick) => tick + 1);
                 }}
               >
-                Réessayer
+                {tc("retry")}
               </button>
             )}
           </div>

@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import "./i18n";
 import App from "./App";
 import { ExperienceProvider } from "./ui/Experience";
 import { SettingsProvider } from "./ui/prefs";
@@ -7,7 +8,7 @@ import { UserSessionProvider } from "./users/UserSession";
 
 const rootEl = document.getElementById("root");
 if (!rootEl) {
-  throw new Error("Pas de #root");
+  throw new Error("Missing #root");
 }
 
 function BootError({ error }: { error: unknown }) {
