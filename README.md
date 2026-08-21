@@ -5,7 +5,12 @@
 <h1 align="center">BassOrder</h1>
 
 <p align="center">
-  Sort your music by genre — <strong>Spotify</strong> and <strong>local library</strong>, two independent modules.
+  <em>From trash playlists to genre mastery.</em><br />
+  Sort by genre — <strong>Spotify</strong> and <strong>local library</strong>, two independent modules.
+</p>
+
+<p align="center">
+  <sub>FR · Des playlists poubelle à la maîtrise du tri.</sub>
 </p>
 
 **Download (Windows)**: [bassorder.smegg.cloud](https://bassorder.smegg.cloud)  

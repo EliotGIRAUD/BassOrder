@@ -476,24 +476,57 @@
 
   /* —— Simulation scan local —— */
   async function bootSim() {
+    /* Placeholders non écoutables — uniquement pour tester le tri / dossiers. */
     const DEMO_TRACKS = [
       { title: "Glass Jaw", artist: "Static Youth", folder: "Rock", dur: "3:42", file: "glass_jaw.mp3" },
       { title: "Static Youth", artist: "Static Youth", folder: "Rock", dur: "4:05", file: "static_youth.mp3" },
       { title: "Redline", artist: "Ash Circuit", folder: "Rock", dur: "3:18", file: "redline.flac" },
+      { title: "Fault Line", artist: "Ash Circuit", folder: "Rock", dur: "3:51", file: "fault_line.mp3" },
       { title: "Blue Room", artist: "Elm Quartet", folder: "Jazz", dur: "5:12", file: "blue_room.mp3" },
       { title: "Smoke Signal", artist: "River Brass", folder: "Jazz", dur: "4:44", file: "smoke_signal.mp3" },
       { title: "Late Set", artist: "Elm Quartet", folder: "Jazz", dur: "6:01", file: "late_set.flac" },
+      { title: "Harbor Lights", artist: "River Brass", folder: "Jazz", dur: "4:02", file: "harbor_lights.mp3" },
       { title: "Concrete Prayer", artist: "K-Line", folder: "Hip-Hop", dur: "2:58", file: "concrete_prayer.mp3" },
       { title: "Night Court", artist: "K-Line", folder: "Hip-Hop", dur: "3:21", file: "night_court.mp3" },
       { title: "Low Battery", artist: "Tape Run", folder: "Hip-Hop", dur: "2:47", file: "low_battery.m4a" },
+      { title: "Sidewalk Cipher", artist: "Tape Run", folder: "Hip-Hop", dur: "3:09", file: "sidewalk_cipher.mp3" },
       { title: "Midnight Drive", artist: "Neon Coast", folder: "Electro", dur: "4:10", file: "midnight_drive.mp3" },
       { title: "After Hours", artist: "Soft Circuit", folder: "Electro", dur: "5:33", file: "after_hours.wav" },
       { title: "Gridlock", artist: "Soft Circuit", folder: "Electro", dur: "3:55", file: "gridlock.mp3" },
       { title: "Pulse Map", artist: "Neon Coast", folder: "Electro", dur: "4:28", file: "pulse_map.flac" },
-      { title: "Harbor Lights", artist: "River Brass", folder: "Jazz", dur: "4:02", file: "harbor_lights.mp3" },
+      { title: "Chrome Bloom", artist: "Velvet Relay", folder: "Pop", dur: "3:14", file: "chrome_bloom.mp3" },
+      { title: "Paper Planets", artist: "Velvet Relay", folder: "Pop", dur: "2:56", file: "paper_planets.mp3" },
+      { title: "Weekend Glow", artist: "Lumen Park", folder: "Pop", dur: "3:33", file: "weekend_glow.m4a" },
+      { title: "Iron Chorus", artist: "Black Voltage", folder: "Metal", dur: "4:41", file: "iron_chorus.mp3" },
+      { title: "Rust Anthem", artist: "Black Voltage", folder: "Metal", dur: "5:02", file: "rust_anthem.flac" },
+      { title: "Forge Hymn", artist: "Slag Engine", folder: "Metal", dur: "3:48", file: "forge_hymn.mp3" },
+      { title: "Copper Softly", artist: "Amber Lane", folder: "Soul", dur: "3:27", file: "copper_softly.mp3" },
+      { title: "Midnight Kitchen", artist: "Amber Lane", folder: "Soul", dur: "4:11", file: "midnight_kitchen.mp3" },
+      { title: "Slow Burn Honey", artist: "Riviera Keys", folder: "Soul", dur: "3:58", file: "slow_burn_honey.flac" },
+      { title: "Yard Signal", artist: "King Root", folder: "Reggae", dur: "3:36", file: "yard_signal.mp3" },
+      { title: "Dub Morning", artist: "King Root", folder: "Reggae", dur: "4:22", file: "dub_morning.mp3" },
+      { title: "Island Wire", artist: "Coral Pressure", folder: "Reggae", dur: "3:19", file: "island_wire.m4a" },
+      { title: "String Orbit", artist: "North Chamber", folder: "Classical", dur: "7:05", file: "string_orbit.flac" },
+      { title: "Quiet March", artist: "North Chamber", folder: "Classical", dur: "5:40", file: "quiet_march.mp3" },
+      { title: "Glass Nocturne", artist: "Ivory Atlas", folder: "Classical", dur: "4:18", file: "glass_nocturne.mp3" },
+      { title: "Calle Norte", artist: "Sol Fuego", folder: "Latin", dur: "3:44", file: "calle_norte.mp3" },
+      { title: "Ritmo Baja", artist: "Sol Fuego", folder: "Latin", dur: "3:12", file: "ritmo_baja.mp3" },
+      { title: "Plaza Drift", artist: "Mar Azul", folder: "Latin", dur: "4:01", file: "plaza_drift.flac" },
+      { title: "Fog Layer", artist: "Pale Antenna", folder: "Ambient", dur: "6:20", file: "fog_layer.wav" },
+      { title: "Soft Horizon", artist: "Pale Antenna", folder: "Ambient", dur: "5:55", file: "soft_horizon.mp3" },
+      { title: "Empty Platform", artist: "Grey Terminal", folder: "Ambient", dur: "7:12", file: "empty_platform.flac" },
       { title: "Untitled 07", artist: "Unknown", folder: "Uncategorized", dur: "3:00", file: "untitled_07.mp3" },
       { title: "Demo Track", artist: "Unknown", folder: "Uncategorized", dur: "2:14", file: "demo_track.mp3" },
+      { title: "track_final_mix", artist: "Unknown", folder: "Uncategorized", dur: "2:48", file: "track_final_mix.mp3" },
+      { title: "IMG_2048_audio", artist: "Unknown", folder: "Uncategorized", dur: "1:55", file: "img_2048_audio.m4a" },
     ];
+
+    function normalizeDemoFolder(name) {
+      if (!name) return "Uncategorized";
+      const n = String(name).trim();
+      if (/^électr/i.test(n) || /^electr/i.test(n)) return "Electro";
+      return n;
+    }
 
     let clips = [];
     try {
@@ -508,23 +541,26 @@
 
     const featured = clips
       .filter((c) => c && c.file && c.title && !/^Remplace-moi/i.test(c.title))
-      .map((c) => ({
-        id: c.id || c.file,
-        title: c.title,
-        artist: c.artist || "Unknown artist",
-        folder: c.folder || c.genre || "Electro",
-        genre: c.genre || c.folder || "Electro",
-        dur: c.durationSecs ? formatClock(c.durationSecs) : "—",
-        file: c.file,
-        audio: "clips/" + c.file,
-        album: c.album || "",
-        year: c.year || "",
-        bpm: c.bpm,
-        musicalKey: c.musicalKey || "",
-        bitrateKbps: c.bitrateKbps,
-        durationSecs: c.durationSecs,
-        playable: true,
-      }));
+      .map((c) => {
+        const folder = normalizeDemoFolder(c.folder || c.genre || "Electro");
+        return {
+          id: c.id || c.file,
+          title: c.title,
+          artist: c.artist || "Unknown artist",
+          folder,
+          genre: folder,
+          dur: c.durationSecs ? formatClock(c.durationSecs) : "—",
+          file: c.file,
+          audio: "clips/" + c.file,
+          album: c.album || "",
+          year: c.year || "",
+          bpm: c.bpm,
+          musicalKey: c.musicalKey || "",
+          bitrateKbps: c.bitrateKbps,
+          durationSecs: c.durationSecs,
+          playable: true,
+        };
+      });
 
     /* Placeholders encore dans clips.json : on les ignore pour la lecture,
        mais on garde le scan démo. Si au moins 1 vrai clip : on les met en tête. */
@@ -546,7 +582,20 @@
       "Preparing the folder plan…",
     ];
 
-    const FOLDER_ORDER = ["Rock", "Jazz", "Hip-Hop", "Electro", "Uncategorized"];
+    const FOLDER_ORDER = [
+      "Rock",
+      "Metal",
+      "Jazz",
+      "Hip-Hop",
+      "Electro",
+      "Pop",
+      "Soul",
+      "Reggae",
+      "Latin",
+      "Classical",
+      "Ambient",
+      "Uncategorized",
+    ];
 
     const rootEl = document.getElementById("simLocal");
     if (!rootEl) return;
