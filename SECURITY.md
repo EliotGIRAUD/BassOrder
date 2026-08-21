@@ -1,22 +1,22 @@
-# Sécurité
+# Security
 
-## Signaler une faille
+## Reporting a vulnerability
 
-Ne publie **pas** de preuve d’exploitation en issue publique.
+Do **not** publish a proof of concept in a public issue.
 
-Envoie un message privé via [GitHub Security Advisories](https://github.com/EliotGIRAUD/BassOrder/security/advisories/new) (ou une issue privée / contact mainteneur) avec :
+Send a private message via [GitHub Security Advisories](https://github.com/EliotGIRAUD/BassOrder/security/advisories/new) (or a private issue / maintainer contact) with:
 
-- description du problème
-- impact possible
-- étapes de reproduction (minimales)
-- version / commit concernés
+- problem description
+- possible impact
+- reproduction steps (minimal)
+- version / commit concerned
 
-Objectif de réponse : acknowledgement sous quelques jours ouvrés, correctif selon gravité.
+Response goal: acknowledgement within a few business days, fix according to severity.
 
-## Portée
+## Scope
 
-- App desktop BassOrder (Tauri)
-- API self-hostée (`server/`) et instance publique `api.bassorder.smegg.cloud`
+- BassOrder desktop app (Tauri)
+- Self-hosted API (`server/`) and public instance `api.bassorder.smegg.cloud`
 - Site `bassorder.smegg.cloud`
 
-Hors scope : comptes Spotify tiers, machines utilisateurs, dépendances non patchables immédiatement (on priorisera une mise à jour).
+Out of scope: third-party Spotify accounts, user machines, dependencies that cannot be patched immediately (we will prioritize an update).

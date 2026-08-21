@@ -1,0 +1,19 @@
+{
+  "titleLoading": "Loading…",
+  "titleWelcome": "Welcome",
+  "titleHello": "Hi {{name}}",
+  "titleUnlocking": "Unlocking…",
+  "ledeLoading": "Preparing your space…",
+  "ledeCreate": "A nickname, a color — then Spotify (or your files) to sort your music.",
+  "ledeOpening": "Opening your space…",
+  "avatarPreviewTitle": "Avatar preview",
+  "pseudoLabel": "Your nickname",
+  "pseudoPlaceholder": "e.g. Eliot",
+  "colorAria": "Color",
+  "submit": "Power on BassOrder",
+  "hintBusy": "Opening…",
+  "hintNeedPin": "Enter your PIN to continue.",
+  "hintWait": "One moment…",
+  "pinPrompt": "PIN / password for {{name}}",
+  "pinWrong": "Incorrect PIN / password."
+}

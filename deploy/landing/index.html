@@ -1,13 +1,74 @@
-<!DOCTYPE html>
-<html lang="fr">
+﻿<!DOCTYPE html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BassOrder — Trie ta musique par genre</title>
+    <title>BassOrder â€” Sort Spotify &amp; local music by genre</title>
     <meta
       name="description"
-      content="BassOrder trie tes playlists Spotify et fichiers locaux par genre musical — app desktop Windows."
+      content="BassOrder is a Windows desktop app that sorts your Spotify playlists and local music library by genre â€” Rock, Jazz, Hip-Hop, Electro and more."
     />
+    <meta
+      name="keywords"
+      content="BassOrder, sort music by genre, Spotify playlist organizer, local music library, music genre sorter, Windows music app"
+    />
+    <meta name="author" content="Eliot Giraud" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="application-name" content="BassOrder" />
+    <link rel="canonical" href="https://bassorder.smegg.cloud/" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="BassOrder" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:url" content="https://bassorder.smegg.cloud/" />
+    <meta
+      property="og:title"
+      content="BassOrder â€” Sort Spotify &amp; local music by genre"
+    />
+    <meta
+      property="og:description"
+      content="Windows app that sorts Spotify playlists and local files into genre folders. Tweak the plan, then copy or move."
+    />
+    <meta property="og:image" content="https://bassorder.smegg.cloud/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="BassOrder logo â€” sort your music by genre" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="BassOrder â€” Sort Spotify &amp; local music by genre"
+    />
+    <meta
+      name="twitter:description"
+      content="Windows app that sorts Spotify playlists and local files into genre folders."
+    />
+    <meta name="twitter:image" content="https://bassorder.smegg.cloud/og-image.png" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "BassOrder",
+        "applicationCategory": "MultimediaApplication",
+        "operatingSystem": "Windows",
+        "url": "https://bassorder.smegg.cloud/",
+        "image": "https://bassorder.smegg.cloud/og-image.png",
+        "description": "Desktop app that sorts Spotify playlists and local music files by genre.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "EUR"
+        },
+        "author": {
+          "@type": "Person",
+          "name": "Eliot Giraud"
+        }
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -57,7 +118,7 @@
         color: inherit;
       }
 
-      /* —— Fixed immersive décor —— */
+      /* â€”â€” Fixed immersive dÃ©cor â€”â€” */
       .atmos {
         position: fixed;
         inset: 0;
@@ -204,7 +265,7 @@
         }
       }
 
-      /* —— App chrome flottant (décor) —— */
+      /* â€”â€” App chrome flottant (dÃ©cor) â€”â€” */
       .float-ui {
         position: fixed;
         inset: 0;
@@ -236,7 +297,9 @@
         width: 2.1rem;
         height: 2.1rem;
         border-radius: 10px;
-        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        background:
+          url("/logo.svg") center / cover no-repeat,
+          linear-gradient(135deg, var(--accent), var(--accent-2));
         box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 40%, transparent);
       }
       .fu-nav {
@@ -389,16 +452,296 @@
         font-family: var(--font-display);
         font-size: 1.05rem;
       }
+      .fu-search {
+        width: min(14rem, 40vw);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.55rem 0.75rem;
+        border-radius: 12px;
+        background: rgba(8, 12, 14, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px);
+        opacity: 0.7;
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+      .fu-search::before {
+        content: "";
+        width: 0.7rem;
+        height: 0.7rem;
+        border: 1.5px solid var(--muted);
+        border-radius: 50%;
+        box-shadow: 0.35rem 0.35rem 0 -0.25rem var(--muted);
+        flex-shrink: 0;
+      }
+      .fu-ring-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.65rem 0.8rem;
+        border-radius: 14px;
+        background: rgba(8, 12, 14, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px);
+        opacity: 0.72;
+      }
+      .fu-ring {
+        --p: 87;
+        width: 2.6rem;
+        height: 2.6rem;
+        border-radius: 50%;
+        background: conic-gradient(
+          var(--accent) calc(var(--p) * 1%),
+          rgba(255, 255, 255, 0.08) 0
+        );
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+      }
+      .fu-ring span {
+        width: 1.9rem;
+        height: 1.9rem;
+        border-radius: 50%;
+        background: #050807;
+        display: grid;
+        place-items: center;
+        font-family: var(--font-mono);
+        font-size: 0.62rem;
+        color: var(--accent);
+      }
+      .fu-ring-wrap b {
+        display: block;
+        font-size: 0.82rem;
+      }
+      .fu-ring-wrap em {
+        font-style: normal;
+        font-size: 0.7rem;
+        color: var(--muted);
+      }
+      .fu-toggle {
+        display: inline-flex;
+        padding: 0.2rem;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        opacity: 0.75;
+      }
+      .fu-toggle span {
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--muted);
+      }
+      .fu-toggle span.is-on {
+        background: color-mix(in srgb, var(--accent) 18%, transparent);
+        color: var(--accent);
+      }
+      .fu-timeline {
+        width: min(12rem, 36vw);
+        padding: 0.65rem 0.75rem;
+        border-radius: 14px;
+        background: rgba(8, 12, 14, 0.68);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px);
+        opacity: 0.68;
+        font-family: var(--font-mono);
+        font-size: 0.65rem;
+        color: var(--muted);
+      }
+      .fu-timeline strong {
+        display: block;
+        color: var(--gold);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 0.4rem;
+        font-weight: 600;
+      }
+      .fu-timeline li {
+        list-style: none;
+        padding: 0.2rem 0;
+        border-left: 2px solid color-mix(in srgb, var(--accent) 35%, transparent);
+        padding-left: 0.55rem;
+        margin-left: 0.15rem;
+      }
+
+      /* Mini Preview Live â€” hero haut-droite (au-dessus du contenu) */
+      .fu-player {
+        position: fixed;
+        width: min(22rem, 38vw);
+        right: 3.5%;
+        top: 7%;
+        z-index: 15;
+        padding: 0.85rem 0.95rem 0.95rem;
+        border-radius: 18px;
+        background: rgba(5, 5, 5, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(16px);
+        box-shadow:
+          0 24px 60px rgba(0, 0, 0, 0.55),
+          0 0 40px color-mix(in srgb, var(--accent) 8%, transparent);
+        opacity: 0.98;
+        pointer-events: auto;
+        cursor: default;
+        transform: rotate(1.2deg);
+        will-change: transform;
+      }
+      .fu-player .spin-border {
+        opacity: 0.55;
+      }
+      .fu-player-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.7rem;
+      }
+      .fu-player-top .eyebrow {
+        margin: 0;
+        font-family: var(--font-mono);
+        font-size: 0.62rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--gold);
+      }
+      .fu-player-body {
+        display: grid;
+        grid-template-columns: 4.2rem 1fr;
+        gap: 0.75rem;
+        align-items: center;
+      }
+      .fu-player-eq {
+        width: 4.2rem;
+        height: 4.2rem;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background: rgba(125, 255, 212, 0.06);
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 3px;
+        padding: 0.65rem 0.5rem;
+      }
+      .fu-player-eq i {
+        width: 4px;
+        border-radius: 99px;
+        background: linear-gradient(var(--gold), var(--accent));
+        height: 22%;
+      }
+      .fu-player-eq.is-on i {
+        animation: playerEq 0.7s ease-in-out infinite;
+      }
+      .fu-player-eq i:nth-child(2) {
+        animation-delay: 0.08s;
+      }
+      .fu-player-eq i:nth-child(3) {
+        animation-delay: 0.16s;
+      }
+      .fu-player-eq i:nth-child(4) {
+        animation-delay: 0.24s;
+      }
+      .fu-player-eq i:nth-child(5) {
+        animation-delay: 0.32s;
+      }
+      .fu-player-meta .kicker {
+        margin: 0 0 0.15rem;
+        font-size: 0.6rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--gold);
+        font-weight: 700;
+      }
+      .fu-player-meta b {
+        display: block;
+        font-family: var(--font-display);
+        font-size: 1rem;
+        letter-spacing: -0.02em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .fu-player-meta span {
+        font-size: 0.75rem;
+        color: var(--accent-2);
+      }
+      .fu-player-seek {
+        margin-top: 0.75rem;
+        width: 100%;
+        appearance: none;
+        height: 5px;
+        border-radius: 99px;
+        background: linear-gradient(
+          90deg,
+          var(--accent) 0 var(--p, 18%),
+          rgba(255, 255, 255, 0.08) var(--p, 18%)
+        );
+        outline: none;
+        cursor: pointer;
+      }
+      .fu-player-seek::-webkit-slider-thumb {
+        appearance: none;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--gold);
+        box-shadow: 0 0 10px var(--gold);
+      }
+      .fu-player-times {
+        display: flex;
+        justify-content: space-between;
+        font-family: var(--font-mono);
+        font-size: 0.65rem;
+        color: var(--muted);
+        margin: 0.3rem 0 0.55rem;
+      }
+      .fu-player-controls {
+        display: flex;
+        justify-content: center;
+        gap: 0.4rem;
+      }
+      .fu-player-controls button {
+        appearance: none;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--ink);
+        font: inherit;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.4rem 0.75rem;
+        border-radius: 999px;
+        cursor: pointer;
+        pointer-events: auto;
+      }
+      .fu-player-controls .is-play {
+        border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+        color: var(--accent);
+        box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 22%, transparent);
+        min-width: 4.5rem;
+      }
       @media (max-width: 900px) {
         .fu-rail,
         .fu-push,
-        .fu-toast {
-          opacity: 0.35;
+        .fu-toast,
+        .fu-search,
+        .fu-ring-wrap,
+        .fu-toggle,
+        .fu-timeline {
+          opacity: 0.3;
           scale: 0.85;
         }
         .fu-card,
         .fu-folder {
           display: none;
+        }
+        .fu-player {
+          display: none;
+        }
+      }
+      @media (min-width: 901px) and (max-width: 1100px) {
+        .fu-player {
+          width: min(18rem, 34vw);
+          right: 2%;
+          top: 6%;
         }
       }
 
@@ -407,7 +750,7 @@
         z-index: 4;
       }
 
-      /* —— Hero —— */
+      /* â€”â€” Hero â€”â€” */
       .stage {
         position: relative;
         z-index: 4;
@@ -418,11 +761,13 @@
         padding: clamp(1.5rem, 4vw, 3rem);
         scroll-snap-align: start;
         scroll-snap-stop: always;
+        pointer-events: none;
       }
       .hero {
         width: min(44rem, 100%);
         padding-bottom: clamp(2rem, 10vh, 5.5rem);
         animation: rise 0.9s var(--ease) both;
+        pointer-events: auto;
       }
       @keyframes rise {
         from {
@@ -435,6 +780,9 @@
         }
       }
       .brand {
+        display: flex;
+        align-items: center;
+        gap: clamp(0.65rem, 2vw, 1.15rem);
         font-family: var(--font-display);
         font-weight: 800;
         font-size: clamp(3.5rem, 13vw, 6.4rem);
@@ -442,6 +790,13 @@
         line-height: 0.86;
         margin: 0 0 1.25rem;
         text-shadow: 0 0 80px color-mix(in srgb, var(--accent) 35%, transparent);
+      }
+      .brand-mark {
+        width: clamp(2.6rem, 8vw, 4.4rem);
+        height: clamp(2.6rem, 8vw, 4.4rem);
+        flex-shrink: 0;
+        border-radius: 22%;
+        box-shadow: 0 0 36px color-mix(in srgb, var(--accent) 28%, transparent);
       }
       .brand span {
         background: linear-gradient(120deg, var(--accent), var(--accent-2) 55%, var(--gold));
@@ -517,7 +872,7 @@
         border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
       }
 
-      /* —— Sections plein écran —— */
+      /* â€”â€” Sections plein Ã©cran â€”â€” */
       section.block {
         position: relative;
         z-index: 4;
@@ -708,7 +1063,7 @@
         max-width: none;
       }
 
-      /* —— Simu scan local —— */
+      /* â€”â€” Simu scan local â€”â€” */
       .sim {
         margin-top: 1.35rem;
         border-radius: 20px;
@@ -1360,7 +1715,7 @@
         color: var(--accent);
       }
 
-      /* —— Preview Live (calqué app) —— */
+      /* â€”â€” Preview Live (calquÃ© app) â€”â€” */
       .player-overlay {
         position: fixed;
         inset: 0;
@@ -1769,7 +2124,44 @@
     </div>
     <div class="eq-fixed" id="eq" aria-hidden="true"></div>
 
-    <!-- Décor : fragments UI de l’app -->
+    <!-- Mini player au-dessus de tout (cliquable) -->
+    <div class="fu-player" id="heroPlayer" data-drift data-amp="4" data-spd="0.22">
+      <span class="spin-border" aria-hidden="true"></span>
+      <div class="fu-player-top">
+        <p class="eyebrow">Preview live</p>
+      </div>
+      <div class="fu-player-body">
+        <div class="fu-player-eq" id="heroPlayerEq" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i>
+        </div>
+        <div class="fu-player-meta">
+          <p class="kicker" id="heroPlayerFolder">Ã‰lectro</p>
+          <b id="heroPlayerTitle">Wake Me Up</b>
+          <span id="heroPlayerArtist">Avicii</span>
+        </div>
+      </div>
+      <input
+        type="range"
+        class="fu-player-seek"
+        id="heroPlayerSeek"
+        min="0"
+        max="1"
+        step="0.1"
+        value="0"
+        aria-label="Position"
+      />
+      <div class="fu-player-times">
+        <span id="heroPlayerCur">0:00</span>
+        <span id="heroPlayerDur">0:00</span>
+      </div>
+      <div class="fu-player-controls">
+        <button type="button" id="heroPlayerPrev" aria-label="PrÃ©cÃ©dent">â†</button>
+        <button type="button" class="is-play" id="heroPlayerPlay">Play</button>
+        <button type="button" id="heroPlayerNext" aria-label="Suivant">â†’</button>
+      </div>
+    </div>
+
+    <!-- DÃ©cor : fragments UI de lâ€™app -->
     <div class="float-ui" aria-hidden="true">
       <div class="fu-rail" data-drift data-amp="6" data-spd="0.28" style="left: 2.5%; top: 16%">
         <div class="fu-logo"></div>
@@ -1778,13 +2170,17 @@
         <div class="fu-nav"></div>
         <div class="fu-nav"></div>
       </div>
-      <span class="fu-chip" data-drift data-amp="10" data-spd="0.4" style="right: 8%; top: 14%">Rock</span>
+
+      <!-- Mini Preview Live â€” zone flÃ¨che (haut droite) -->
+      <!-- (dÃ©placÃ© hors float-ui pour les clics) -->
+
+      <span class="fu-chip" data-drift data-amp="10" data-spd="0.4" style="left: 48%; top: 12%">Rock</span>
       <span
         class="fu-chip t-gold"
         data-drift
         data-amp="12"
         data-spd="0.32"
-        style="right: 18%; top: 28%"
+        style="left: 58%; top: 22%"
         >Jazz</span
       >
       <span
@@ -1800,15 +2196,74 @@
         data-drift
         data-amp="11"
         data-spd="0.36"
-        style="right: 6%; bottom: 36%"
-        >Électro</span
+        style="right: 8%; bottom: 38%"
+        >Ã‰lectro</span
       >
+      <span
+        class="fu-chip t-gold"
+        data-drift
+        data-amp="8"
+        data-spd="0.41"
+        style="left: 42%; bottom: 32%"
+        >Soul</span
+      >
+
+      <div
+        class="fu-search"
+        data-drift
+        data-amp="5"
+        data-spd="0.27"
+        style="left: 38%; top: 18%"
+      >
+        Rechercher un titreâ€¦
+      </div>
+
+      <div
+        class="fu-ring-wrap"
+        data-drift
+        data-amp="6"
+        data-spd="0.31"
+        style="left: 52%; top: 48%"
+      >
+        <div class="fu-ring" style="--p: 87"><span>87%</span></div>
+        <div>
+          <b>ClassÃ©s</b>
+          <em>14 / 16 titres</em>
+        </div>
+      </div>
+
+      <div
+        class="fu-toggle"
+        data-drift
+        data-amp="5"
+        data-spd="0.35"
+        style="right: 28%; bottom: 30%"
+      >
+        <span class="is-on">Copier</span>
+        <span>DÃ©placer</span>
+      </div>
+
+      <div
+        class="fu-timeline"
+        data-drift
+        data-amp="6"
+        data-spd="0.29"
+        style="left: 6%; top: 58%"
+      >
+        <strong>DÃ©tection</strong>
+        <ul style="margin: 0; padding: 0">
+          <li>tags ID3 lus</li>
+          <li>genre suggÃ©rÃ©</li>
+          <li>plan prÃªt</li>
+        </ul>
+      </div>
+
       <div
         class="fu-push"
         data-drift
         data-amp="7"
         data-spd="0.3"
-        style="right: 5%; top: 42%; --w: 78%"
+        style="right: 5%; top: 52%; --w: 78%"
       >
         <div class="fu-push-label"><span>Scan local</span><b>78%</b></div>
         <div class="fu-push-track"><div class="fu-push-fill"></div></div>
@@ -1818,76 +2273,96 @@
         data-drift
         data-amp="8"
         data-spd="0.38"
-        style="left: 10%; top: 48%; --w: 44%"
+        style="left: 10%; top: 42%; --w: 44%"
       >
         <div class="fu-push-label"><span>Spotify import</span><b>44%</b></div>
         <div class="fu-push-track">
           <div class="fu-push-fill" style="background: linear-gradient(90deg, var(--spotify), var(--accent))"></div>
         </div>
       </div>
-      <div class="fu-toast" data-drift data-amp="6" data-spd="0.25" style="right: 10%; bottom: 22%">
-        <strong>12 titres → Jazz</strong>
-        <span>Corrigé · prêt à déplacer</span>
+      <div class="fu-toast" data-drift data-amp="6" data-spd="0.25" style="right: 10%; bottom: 18%">
+        <strong>12 titres â†’ Jazz</strong>
+        <span>CorrigÃ© Â· prÃªt Ã  dÃ©placer</span>
       </div>
       <div class="fu-card" data-drift data-amp="9" data-spd="0.33" style="left: 22%; top: 20%">
         <i></i>
         <div>
           <b>Night Bus</b>
-          <span>suggéré · Électro</span>
+          <span>suggÃ©rÃ© Â· Ã‰lectro</span>
         </div>
       </div>
-      <div class="fu-folder" data-drift data-amp="7" data-spd="0.29" style="right: 22%; top: 58%">
+      <div class="fu-card" data-drift data-amp="7" data-spd="0.37" style="right: 36%; top: 62%">
+        <i style="background: linear-gradient(135deg, #ff6b6b, var(--gold))"></i>
+        <div>
+          <b>Glass Jaw</b>
+          <span>suggÃ©rÃ© Â· Rock</span>
+        </div>
+      </div>
+      <div class="fu-folder" data-drift data-amp="7" data-spd="0.29" style="right: 22%; top: 68%">
         <em>Dossier</em>
         <strong>Rock</strong>
       </div>
-      <div class="fu-folder" data-drift data-amp="8" data-spd="0.34" style="left: 28%; bottom: 24%">
+      <div class="fu-folder" data-drift data-amp="8" data-spd="0.34" style="left: 30%; bottom: 20%">
         <em>Dossier</em>
         <strong>Soul</strong>
+      </div>
+      <div class="fu-folder" data-drift data-amp="6" data-spd="0.4" style="left: 48%; bottom: 14%">
+        <em>Dossier</em>
+        <strong>Jazz</strong>
       </div>
     </div>
 
     <div class="content">
       <header class="stage">
         <div class="hero">
-          <p class="brand">Bass<span>Order</span></p>
-          <h1 class="tag">Trie playlists &amp; fichiers par genre musical</h1>
+          <p class="brand">
+            <img
+              class="brand-mark"
+              src="/logo.svg"
+              width="72"
+              height="72"
+              alt=""
+              decoding="async"
+            />
+            Bass<span>Order</span>
+          </p>
+          <h1 class="tag">Sort playlists &amp; files by music genre</h1>
           <p class="lead">
-            <strong style="color: var(--ink)">BassOrder</strong> est une app
-            desktop Windows (Mac bientôt) qui
-            <strong style="color: var(--ink)">classe ta musique par genre</strong>
-            : likes / playlists Spotify et bibliothèque locale → dossiers Rock,
-            Jazz, Hip-Hop, Électro… Tu corriges au besoin, puis tu copies ou
-            déplaces.
+            <strong style="color: var(--ink)">BassOrder</strong> is a Windows
+            desktop app (Mac coming soon) that
+            <strong style="color: var(--ink)">sorts your music by genre</strong>
+            : Spotify likes / playlists and your local library â†’ Rock, Jazz,
+            Hip-Hop, Electro foldersâ€¦ You tweak as needed, then copy or move.
           </p>
           <div class="cta">
             <a
               class="btn btn-primary mag"
-              href="/downloads/BassOrder_0.1.0_x64_en-US.msi"
-              >Télécharger pour Windows</a
+              href="/downloads/BassOrder_0.1.4_x64_en-US.msi"
+              >Download for Windows</a
             >
-            <a class="btn btn-ghost mag" href="#demo">Essayer le scan</a>
+            <a class="btn btn-ghost mag" href="#demo">Try the scan</a>
           </div>
           <p class="fine">
-            Aussi en
-            <a href="/downloads/BassOrder_0.1.0_x64-setup.exe">.exe</a>
-            · macOS via
+            Also as
+            <a href="/downloads/BassOrder_0.1.4_x64-setup.exe">.exe</a>
+            Â· macOS via
             <a href="https://github.com/EliotGIRAUD/BassOrder/releases">releases</a>
-            ·
-            <a href="https://github.com/EliotGIRAUD/BassOrder">code source</a>
+            Â·
+            <a href="https://github.com/EliotGIRAUD/BassOrder">source code</a>
           </p>
         </div>
       </header>
 
       <section class="block" id="comment">
         <div class="block-inner reveal">
-          <p class="kicker">À quoi ça sert</p>
-          <h2>Une app pour ranger ta musique par genre</h2>
+          <p class="kicker">What itâ€™s for</p>
+          <h2>An app to organize your music by genre</h2>
           <p>
-            Objectif clair : prendre une
-            <strong>playlist Spotify</strong> (ou un dossier de fichiers) et la
-            <strong>trier automatiquement par genres musicaux</strong> — pas un
-            réseau social, pas un player. BassOrder détecte / propose le genre,
-            tu valides, puis l’app organise.
+            Clear goal: take a
+            <strong>Spotify playlist</strong> (or a folder of files) and
+            <strong>sort it automatically by music genres</strong> â€” not a
+            social network, not a player. BassOrder detects / suggests the genre,
+            you confirm, then the app organizes.
           </p>
           <div class="fx-frame">
             <span class="spin-border" aria-hidden="true"></span>
@@ -1895,69 +2370,68 @@
               <li>
                 <span class="n">01</span>
                 <div>
-                  <h3>Installe &amp; allume</h3>
+                  <h3>Install &amp; launch</h3>
                   <p>
-                    Un seul espace sur ta machine (pseudo + couleur). Pas de
-                    multi-profils Netflix.
+                    One space on your machine (handle + color). No
+                    Netflix-style multi-profiles.
                   </p>
                 </div>
               </li>
               <li>
                 <span class="n">02</span>
                 <div>
-                  <h3>Connecte Spotify (recommandé)</h3>
+                  <h3>Connect Spotify (recommended)</h3>
                   <p>
-                    Importe tes likes / artistes. BassOrder construit un
-                    <strong>dictionnaire de genres</strong> pour classer plus
-                    juste ensuite.
+                    Import your likes / artists. BassOrder builds a
+                    <strong>genre dictionary</strong> for more accurate sorting
+                    later.
                   </p>
                 </div>
               </li>
               <li>
                 <span class="n">03</span>
                 <div>
-                  <h3>Trie playlists &amp; fichiers</h3>
+                  <h3>Sort playlists &amp; files</h3>
                   <p>
-                    Suggestions de genres → correction →
-                    <strong>copie ou déplacement</strong> dans des dossiers par
-                    genre.
+                    Genre suggestions â†’ corrections â†’
+                    <strong>copy or move</strong> into genre folders.
                   </p>
                 </div>
               </li>
               <li>
                 <span class="n">04</span>
                 <div>
-                  <h3>Cloud optionnel</h3>
+                  <h3>Optional cloud</h3>
                   <p>
-                    Sync knowledge (miroir + pool). Tes fichiers audio restent
-                    sur ton PC.
+                    Knowledge sync (mirror + pool). Your audio files stay
+                    on your PC.
                   </p>
                 </div>
               </li>
             </ol>
           </div>
-          <div class="rail-mock" aria-label="Modules de l’app">
+          <div class="rail-mock" aria-label="App modules">
             <span class="rail-pill" data-c="spotify"><i class="dot"></i> Spotify</span>
-            <span class="rail-pill" data-c="local"><i class="dot"></i> Mes fichiers</span>
-            <span class="rail-pill"><i class="dot"></i> Dictionnaire</span>
-            <span class="rail-pill" data-c="gold"><i class="dot"></i> Mon espace</span>
+            <span class="rail-pill" data-c="local"><i class="dot"></i> My files</span>
+            <span class="rail-pill"><i class="dot"></i> Dictionary</span>
+            <span class="rail-pill" data-c="gold"><i class="dot"></i> My space</span>
           </div>
         </div>
       </section>
 
       <section class="block" id="demo">
         <div class="block-inner reveal">
-          <p class="kicker">Essaie ici</p>
-          <h2>Simule un scan local</h2>
+          <p class="kicker">Try it here</p>
+          <h2>Simulate a local scan</h2>
           <p>
-            Le vrai geste BassOrder : choisir un dossier → lire les fichiers →
-            plan de dossiers par <strong>genre</strong>. Rien n’est écrit sur
-            le disque tant que tu n’confirmes pas dans l’app.
+            The real BassOrder flow: pick a folder â†’ read the files â†’
+            folder plan by <strong>genre</strong>. Nothing is written to disk
+            until you confirm in the app.
           </p>
           <div class="sim" id="simLocal">
             <div class="sim-head">
-              <span>Mes fichiers · <strong>démo</strong></span>
-              <span id="simStatus">Prêt</span>
+              <span>My files Â· <strong>demo</strong></span>
+              <span id="simStatus">Ready</span>
             </div>
             <div class="sim-stage">
               <div class="sim-toast" id="simToast" aria-live="polite">
@@ -1973,22 +2447,22 @@
                     ><i style="--h: 0.35"></i><i style="--h: 0.75"></i
                     ><i style="--h: 0.5"></i>
                   </div>
-                  <h3>Module fichiers locaux</h3>
+                  <h3>Local files module</h3>
                   <p>
-                    Comme dans l’app : tu pointes un dossier de musique, BassOrder
-                    analyse les tags et propose un plan Rock / Jazz / Hip-Hop…
+                    Just like in the app: point to a music folder, BassOrder
+                    reads the tags and suggests a Rock / Jazz / Hip-Hop planâ€¦
                   </p>
                   <button type="button" class="btn btn-primary" id="simOpenPicker">
-                    Choisir un dossier de musique
+                    Choose a music folder
                   </button>
                 </div>
               </div>
 
               <div class="sim-panel" data-step="picker" id="simPicker">
-                <div class="sim-picker" role="dialog" aria-label="Choisir un dossier">
+                <div class="sim-picker" role="dialog" aria-label="Choose a folder">
                   <div class="sim-picker-bar">
                     <i></i><i></i><i></i>
-                    <span class="sim-picker-path" id="simPickerPath">Ce PC\Utilisateurs\Alex</span>
+                    <span class="sim-picker-path" id="simPickerPath">This PC\Users\Alex</span>
                   </div>
                   <ul class="sim-tree" id="simTree">
                     <li>
@@ -2038,9 +2512,9 @@
                     </li>
                   </ul>
                   <div class="sim-picker-actions">
-                    <button type="button" class="sim-btn" id="simPickerCancel">Annuler</button>
+                    <button type="button" class="sim-btn" id="simPickerCancel">Cancel</button>
                     <button type="button" class="sim-btn sim-btn-primary" id="simPickerOk" disabled>
-                      Ouvrir
+                      Open
                     </button>
                   </div>
                 </div>
@@ -2055,18 +2529,18 @@
                     <span class="sim-radar-core"></span>
                   </div>
                   <div class="sim-scan-copy">
-                    <p class="eyebrow">Scan disque</p>
-                    <h3>Analyse en cours</h3>
+                    <p class="eyebrow">Disk scan</p>
+                    <h3>Analyzing</h3>
                     <p class="sub">
-                      Rien n’est écrit sur le disque — on lit seulement les
-                      métadonnées.
+                      Nothing is written to disk â€” we only read
+                      metadata.
                     </p>
                     <div class="sim-term">
                       <div class="sim-term-bar"><i></i><i></i><i></i><span>scan.sh</span></div>
                       <div class="sim-term-body">
                         <p class="sim-term-line">
                           <span class="prompt">&gt;</span
-                          ><span id="simTermLine">On ouvre ton dossier…</span>
+                          ><span id="simTermLine">Opening your folderâ€¦</span>
                         </p>
                         <p class="sim-term-detail" id="simTermFile"></p>
                       </div>
@@ -2082,7 +2556,7 @@
                     </div>
                     <div class="sim-meta">
                       <strong id="simPercent">0%</strong>
-                      <span id="simCount">0 / 16 titres</span>
+                      <span id="simCount">0 / 16 tracks</span>
                     </div>
                   </div>
                 </div>
@@ -2095,32 +2569,32 @@
                       <span id="simRingPct">87%</span>
                     </div>
                     <div>
-                      <b>Plan de dossiers</b>
-                      <span id="simPlanSummary">14 classés · 2 sans genre</span>
+                      <b>Folder plan</b>
+                      <span id="simPlanSummary">14 sorted Â· 2 uncategorized</span>
                     </div>
                   </div>
                   <p class="sim-path" id="simRootPath">C:\Users\Alex\Music</p>
                 </div>
                 <div class="sim-workspace">
                   <div class="sim-folders">
-                    <div class="sim-pane-label">Dossiers</div>
+                    <div class="sim-pane-label">Folders</div>
                     <ul class="sim-folder-list" id="simFolders"></ul>
                   </div>
                   <div class="sim-detail">
-                    <div class="sim-pane-label" id="simDetailLabel">Titres</div>
+                    <div class="sim-pane-label" id="simDetailLabel">Tracks</div>
                     <ul class="sim-tracks" id="simTracks"></ul>
                   </div>
                 </div>
                 <div class="sim-plan-cta">
                   <a
                     class="btn btn-primary mag"
-                    href="/downloads/BassOrder_0.1.0_x64_en-US.msi"
-                    >Télécharger pour Windows</a
+                    href="/downloads/BassOrder_0.1.4_x64_en-US.msi"
+                    >Download for Windows</a
                   >
-                  <button type="button" class="linkish" id="simReplay">Rejouer la démo</button>
+                  <button type="button" class="linkish" id="simReplay">Replay the demo</button>
                 </div>
                 <p class="sim-clips-note" id="simClipsNote" hidden>
-                  Clique un titre marqué <strong>écouter</strong> pour ouvrir la Preview Live.
+                  Click a track marked <strong>listen</strong> to open Live Preview.
                 </p>
               </div>
             </div>
@@ -2130,27 +2604,26 @@
 
       <section class="block" id="engines">
         <div class="block-inner reveal">
-          <p class="kicker">Deux moteurs</p>
-          <h2>Spotify et fichiers, même logique</h2>
+          <p class="kicker">Two engines</p>
+          <h2>Spotify and files, same logic</h2>
           <div class="split" style="margin-top: 1.5rem">
             <article class="panel">
               <span class="spin-border" aria-hidden="true"></span>
               <p class="kicker">Spotify</p>
-              <h3 class="panel-title">Playlists Spotify → genres</h3>
+              <h3 class="panel-title">Spotify playlists â†’ genres</h3>
               <p>
-                Importe likes / artistes, construis ton dictionnaire, puis trie
-                pour ranger ta musique Spotify par genre musical — réutilisable
-                sur tes MP3 ensuite.
+                Import likes / artists, build your dictionary, then sort
+                so your Spotify music is organized by genre â€” reusable on your
+                MP3s afterward.
               </p>
             </article>
             <article class="panel">
               <span class="spin-border" aria-hidden="true"></span>
               <p class="kicker">Local</p>
-              <h3 class="panel-title">Fichiers → dossiers par genre</h3>
+              <h3 class="panel-title">Files â†’ folders by genre</h3>
               <p>
-                Scanne un dossier, corrige les suggestions, puis copie ou
-                déplace vers Rock, Jazz, Hip-Hop… dès le jour 1, même sans
-                Spotify.
+                Scan a folder, fix suggestions, then copy or move into
+                Rock, Jazz, Hip-Hopâ€¦ from day one, even without Spotify.
               </p>
             </article>
           </div>
@@ -2159,25 +2632,24 @@
 
       <section class="block" id="download">
         <div class="block-inner reveal">
-          <p class="kicker">Ambiance</p>
-          <h2>Faite pour classer des playlists, pas pour administrer</h2>
+          <p class="kicker">Vibe</p>
+          <h2>Built to sort playlists, not to administer</h2>
           <p>
-            BassOrder = trier ta musique
-            <strong>par genres musicaux</strong> (Spotify + local), historique,
-            dictionnaire, sync knowledge optionnelle. Un utilisateur, un flux
-            clair — <strong>Spotify d’abord</strong>, fichiers toujours à
-            portée.
+            BassOrder = sorting your music
+            <strong>by music genres</strong> (Spotify + local), history,
+            dictionary, optional knowledge sync. One user, one clear flow â€”
+            <strong>Spotify first</strong>, files always within reach.
           </p>
           <div class="cta" style="margin-top: 1.75rem">
             <a
               class="btn btn-primary mag"
-              href="/downloads/BassOrder_0.1.0_x64_en-US.msi"
-              >Télécharger pour Windows</a
+              href="/downloads/BassOrder_0.1.4_x64_en-US.msi"
+              >Download for Windows</a
             >
             <a
               class="btn btn-ghost mag"
               href="https://github.com/EliotGIRAUD/BassOrder/releases"
-              >Voir les releases</a
+              >View releases</a
             >
           </div>
         </div>
@@ -2185,14 +2657,14 @@
 
       <footer class="site">
         <div class="inner">
-          <span>BassOrder · Eliot GIRAUD · MIT</span>
+          <span>BassOrder Â· Eliot GIRAUD Â· MIT</span>
           <span>
-            <a href="/privacy.html">Confidentialité</a>
-            ·
-            <a href="/terms.html">Conditions</a>
-            ·
-            <a href="/mentions.html">Mentions</a>
-            ·
+            <a href="/privacy.html">Privacy</a>
+            Â·
+            <a href="/terms.html">Terms</a>
+            Â·
+            <a href="/mentions.html">Legal notice</a>
+            Â·
             <a href="https://github.com/EliotGIRAUD/BassOrder">GitHub</a>
           </span>
         </div>
@@ -2201,33 +2673,33 @@
 
     </div>
 
-    <div class="player-overlay" id="playerOverlay" role="dialog" aria-modal="true" aria-label="Preview piste">
-      <button type="button" class="player-backdrop" id="playerBackdrop" aria-label="Fermer"></button>
+    <div class="player-overlay" id="playerOverlay" role="dialog" aria-modal="true" aria-label="Track preview">
+      <button type="button" class="player-backdrop" id="playerBackdrop" aria-label="Close"></button>
       <div class="player-sheet">
         <span class="spin-border" aria-hidden="true"></span>
         <header class="player-top">
           <p class="eyebrow">Preview live</p>
-          <button type="button" class="player-close" id="playerClose">Fermer</button>
+          <button type="button" class="player-close" id="playerClose">Close</button>
         </header>
         <div class="player-main">
           <div class="player-cover">
             <div class="player-eq" id="playerEq" aria-hidden="true"></div>
           </div>
           <div class="player-info">
-            <p class="player-kicker" id="playerFolder">—</p>
-            <h3 id="playerTitle">—</h3>
-            <p class="player-artist" id="playerArtist">—</p>
+            <p class="player-kicker" id="playerFolder">â€”</p>
+            <h3 id="playerTitle">â€”</h3>
+            <p class="player-artist" id="playerArtist">â€”</p>
             <p class="player-error" id="playerError" hidden></p>
             <dl class="player-meta">
-              <div><dt>Album</dt><dd id="playerAlbum">—</dd></div>
-              <div><dt>Année</dt><dd id="playerYear">—</dd></div>
-              <div><dt>Genre</dt><dd id="playerGenre">—</dd></div>
-              <div><dt>BPM</dt><dd id="playerBpm">—</dd></div>
-              <div><dt>Clé</dt><dd id="playerKey">—</dd></div>
-              <div><dt>Bitrate</dt><dd id="playerBitrate">—</dd></div>
-              <div><dt>Durée</dt><dd id="playerDurMeta">—</dd></div>
-              <div class="player-meta-wide"><dt>Piste</dt><dd id="playerFile">—</dd></div>
-              <div class="player-meta-wide"><dt>Chemin</dt><dd id="playerPath">—</dd></div>
+              <div><dt>Album</dt><dd id="playerAlbum">â€”</dd></div>
+              <div><dt>Year</dt><dd id="playerYear">â€”</dd></div>
+              <div><dt>Genre</dt><dd id="playerGenre">â€”</dd></div>
+              <div><dt>BPM</dt><dd id="playerBpm">â€”</dd></div>
+              <div><dt>Key</dt><dd id="playerKey">â€”</dd></div>
+              <div><dt>Bitrate</dt><dd id="playerBitrate">â€”</dd></div>
+              <div><dt>Duration</dt><dd id="playerDurMeta">â€”</dd></div>
+              <div class="player-meta-wide"><dt>Track</dt><dd id="playerFile">â€”</dd></div>
+              <div class="player-meta-wide"><dt>Path</dt><dd id="playerPath">â€”</dd></div>
             </dl>
           </div>
         </div>
@@ -2238,17 +2710,17 @@
             <span id="playerTimeDur">0:00</span>
           </div>
           <div class="player-volume">
-            <button type="button" class="player-mute" id="playerMute">Son</button>
+            <button type="button" class="player-mute" id="playerMute">Sound</button>
             <input type="range" class="player-vol" id="playerVol" min="0" max="1" step="0.01" value="0.8" aria-label="Volume" />
             <span class="player-vol-pct" id="playerVolPct">80%</span>
           </div>
           <div class="player-controls">
-            <button type="button" id="playerPrev">← Préc.</button>
+            <button type="button" id="playerPrev">â† Prev.</button>
             <button type="button" class="player-play" id="playerPlay">Play</button>
-            <button type="button" id="playerNext">Suiv. →</button>
+            <button type="button" id="playerNext">Next â†’</button>
           </div>
           <p class="player-hint">
-            Espace : play/pause · ↑ ↓ : volume · M : muet · Shift + ← → : pistes · Esc : fermer
+            Space: play/pause Â· â†‘ â†“: volume Â· M: mute Â· Shift + â† â†’: tracks Â· Esc: close
           </p>
         </div>
       </div>

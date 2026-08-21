@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import i18n, { intlLocale, type AppLocale } from "../i18n";
 import {
   confirmMove,
   ensureLibraryAccess,
@@ -78,18 +80,73 @@ import {
   type ImportExcludeOptions,
 } from "./libraryWaste";
 
+function appLoc(): "en-US" | "fr-FR" {
+  return intlLocale((i18n.language.startsWith("fr") ? "fr" : "en") as AppLocale);
+}
+
+/** Identité stable (filtre artistes) — ne pas traduire. */
+const UNKNOWN_ARTIST = "Artiste inconnu";
+
+type LocalT = (key: string, options?: Record<string, unknown>) => string;
+
+function displayPlanLabel(group: GenreGroup, t: LocalT): string {
+  const raw =
+    group.folder === TRUNCATED_FOLDER || group.folder === DUPLICATE_FOLDER
+      ? group.genre
+      : group.folder;
+  return displayKnownLabel(raw, t);
+}
+
+function displayKnownLabel(value: string, t: LocalT): string {
+  if (value === "Sans genre") {
+    return t("genreUnknown");
+  }
+  if (value === "Illisible") {
+    return t("genreUnreadable");
+  }
+  if (value === TRUNCATED_GENRE || value === TRUNCATED_FOLDER) {
+    return t("detailTitleTrunc");
+  }
+  if (value === DUPLICATE_GENRE || value === DUPLICATE_FOLDER) {
+    return t("detailTitleDupes");
+  }
+  return value;
+}
+
+function formatWasteParts(
+  t: LocalT,
+  duplicates: number,
+  unread: number,
+  truncated: number,
+  shortTruncated = false,
+): string[] {
+  const parts: string[] = [];
+  if (duplicates > 0) {
+    parts.push(t("summaryDuplicates", { count: duplicates }));
+  }
+  if (unread > 0) {
+    parts.push(t("summaryParasites", { count: unread }));
+  }
+  if (truncated > 0) {
+    parts.push(
+      t(shortTruncated ? "summaryTruncatedShort" : "summaryTruncated", {
+        count: truncated,
+      }),
+    );
+  }
+  return parts;
+}
+
+function displayArtistName(name: string, t: LocalT): string {
+  return name === UNKNOWN_ARTIST ? t("unknownArtist") : name;
+}
+
 type SortKey = "count" | "name";
 type TrackSortKey = "title" | "artist" | "album" | "bpm" | "duration";
 
-const TRACK_SORT_OPTIONS: { key: TrackSortKey; label: string }[] = [
-  { key: "title", label: "Titre" },
-  { key: "artist", label: "Artiste" },
-  { key: "album", label: "Album" },
-  { key: "bpm", label: "BPM" },
-  { key: "duration", label: "Durée" },
-];
-
 export function LocalModule({ active = true }: { active?: boolean }) {
+  const { t, i18n } = useTranslation("local");
+  const loc = intlLocale((i18n.language.startsWith("fr") ? "fr" : "en") as AppLocale);
   const tauri = isTauri();
   const fx = useExperience();
   const [restored] = useState(() => {
@@ -138,7 +195,7 @@ export function LocalModule({ active = true }: { active?: boolean }) {
   );
   const [recents, setRecents] = useState<SavedLibrary[]>(listLibraries);
   /** Raison de la prochaine sauvegarde historique (amélioration détection). */
-  const saveReasonRef = useRef("Analyse du dossier");
+  const saveReasonRef = useRef(t("jobScan"));
 
   useEffect(() => {
     if (!restored?.meta || restored.scan) {
@@ -206,10 +263,10 @@ export function LocalModule({ active = true }: { active?: boolean }) {
     if (sameImportExcludes(exclude, next)) {
       fx.toast({
         kind: "hint",
-        title: "Aucun changement",
+        title: t("toastNoChange"),
         body: allJunkExcluded(waste, exclude)
-          ? "Tout est déjà hors barre et hors import. Clique « Tout réintégrer » ou « Annuler » pour les revoir."
-          : "Ce filtre était déjà appliqué.",
+          ? t("toastNoChangeAllOut")
+          : t("toastNoChangeAlready"),
       });
       return;
     }
@@ -229,8 +286,8 @@ export function LocalModule({ active = true }: { active?: boolean }) {
     if (!prev) {
       fx.toast({
         kind: "hint",
-        title: "Rien à annuler",
-        body: "Aucun filtre précédent. Décoche une case ou clique « Tout réintégrer ».",
+        title: t("toastNothingToUndo"),
+        body: t("toastNothingToUndoBody"),
       });
       return;
     }
@@ -241,8 +298,8 @@ export function LocalModule({ active = true }: { active?: boolean }) {
     fx.flash();
     fx.toast({
       kind: "hint",
-      title: "Étape précédente",
-      body: "La barre et le plan sont revenus en arrière. Tes fichiers n’ont pas été modifiés.",
+      title: t("toastPrevStep"),
+      body: t("toastPrevStepBody"),
     });
   }
 
@@ -250,7 +307,7 @@ export function LocalModule({ active = true }: { active?: boolean }) {
     if (!scan) {
       return;
     }
-    saveReasonRef.current = "Classement manuel";
+    saveReasonRef.current = t("reasonManual");
     const nextTracks = tracks.map((t) =>
       t.path === trackPath ? { ...t, folder, genre } : t,
     );
@@ -259,7 +316,7 @@ export function LocalModule({ active = true }: { active?: boolean }) {
     fx.toast({
       kind: "ok",
       title: `→ ${folder}`,
-      body: left > 0 ? `${left} titre${left > 1 ? "s" : ""} encore sans genre` : "Plus rien à trier.",
+      body: left > 0 ? t("toastStillUnknown", { count: left }) : t("toastNothingLeft"),
     });
   }
 
@@ -275,12 +332,12 @@ export function LocalModule({ active = true }: { active?: boolean }) {
     if (before === 0) {
       fx.toast({
         kind: "hint",
-        title: "Déjà isolés",
-        body: "Tous ces titres 3:00 sont déjà uniquement dans « Coupés à 3:00 ».",
+        title: t("toastAlreadyIsolated"),
+        body: t("toastAlreadyIsolatedBody"),
       });
       return;
     }
-    saveReasonRef.current = "Isolation des fichiers coupés à 3:00";
+    saveReasonRef.current = t("reasonIsolate");
     const isolatePaths = new Set(
       tracks
         .filter(isTruncatedStillInGenre)
@@ -294,8 +351,8 @@ export function LocalModule({ active = true }: { active?: boolean }) {
     setArtistFilter(null);
     fx.toast({
       kind: "ok",
-      title: `${before} titre${before > 1 ? "s" : ""} isolé${before > 1 ? "s" : ""}`,
-      body: "Retirés des dossiers genre — uniquement dans « Coupés à 3:00 ».",
+      title: t("toastIsolated", { count: before }),
+      body: t("toastIsolatedBody"),
     });
   }
 
@@ -335,11 +392,11 @@ export function LocalModule({ active = true }: { active?: boolean }) {
       })
       .sort((a, b) => {
         if (sortKey === "name") {
-          return a.genre.localeCompare(b.genre, "fr", { sensitivity: "base" });
+          return a.genre.localeCompare(b.genre, loc, { sensitivity: "base" });
         }
         return (
           b.tracks.length - a.tracks.length ||
-          a.genre.localeCompare(b.genre, "fr", { sensitivity: "base" })
+          a.genre.localeCompare(b.genre, loc, { sensitivity: "base" })
         );
       });
   }, [scan, sortKey, query, exclude.parasites]);
@@ -397,7 +454,7 @@ export function LocalModule({ active = true }: { active?: boolean }) {
           : scanProgress?.label;
       setWorkJob(
         "local-scan",
-        "Analyse du dossier",
+        t("jobScan"),
         detail,
         scanProgress && scanProgress.total > 0
           ? { done: scanProgress.done, total: scanProgress.total }
@@ -412,7 +469,7 @@ export function LocalModule({ active = true }: { active?: boolean }) {
           : undefined;
       setWorkJob(
         "local-lookup",
-        "Détection des genres",
+        t("jobLookup"),
         detail,
         lookup && lookup.total > 0
           ? { done: lookup.done, total: lookup.total }
@@ -421,7 +478,7 @@ export function LocalModule({ active = true }: { active?: boolean }) {
       return () => clearWorkJob("local-lookup");
     }
     if (busy === "organize") {
-      setWorkJob("local-organize", "Écriture sur le disque");
+      setWorkJob("local-organize", t("jobOrganize"));
       return () => clearWorkJob("local-organize");
     }
     clearWorkJob("local-scan");
@@ -518,8 +575,8 @@ export function LocalModule({ active = true }: { active?: boolean }) {
       if (!full) {
         fx.toast({
           kind: "warn",
-          title: "Analyse incomplète",
-          body: "Le détail des titres n’est plus en cache — relance une analyse.",
+          title: t("toastIncomplete"),
+          body: t("toastIncompleteBody"),
         });
         return;
       }
@@ -542,8 +599,12 @@ export function LocalModule({ active = true }: { active?: boolean }) {
       if (toast) {
         fx.toast({
           kind: "ok",
-          title: "Analyse rouverte",
-          body: `${lib.fileCount} titre${lib.fileCount > 1 ? "s" : ""} · ${lib.sortedPercent}% déjà classés · ${formatSavedAt(lib.savedAt)}`,
+          title: t("toastReopened"),
+          body: t("toastReopenedBody", {
+            count: lib.fileCount,
+            percent: lib.sortedPercent,
+            when: formatSavedAt(lib.savedAt),
+          }),
         });
       }
     })();
@@ -559,20 +620,18 @@ export function LocalModule({ active = true }: { active?: boolean }) {
     }
     fx.toast({
       kind: "hint",
-      title: "Retiré de l’historique",
-      body: "Cette analyse n’apparaît plus ici. Tes fichiers sur le disque n’ont pas été modifiés.",
+      title: t("toastRemovedHistory"),
+      body: t("toastRemovedHistoryBody"),
     });
   }
 
   async function chooseFolder() {
     if (!tauri) {
-      setError(
-        "Ouvre BassOrder avec pnpm tauri dev — le navigateur ne peut pas lire ta musique.",
-      );
+      setError(t("needDesktopHint"));
       fx.toast({
         kind: "warn",
-        title: "Fenêtre desktop requise",
-        body: "Relance avec pnpm tauri dev pour lire ta bibliothèque.",
+        title: t("toastNeedDesktop"),
+        body: t("toastNeedDesktopBody"),
       });
       return;
     }
@@ -593,11 +652,11 @@ export function LocalModule({ active = true }: { active?: boolean }) {
       setScanProgress(null);
       fx.toast({
         kind: "go",
-        title: "Analyse du dossier",
-        body: "Lecture des infos des titres (artiste, genre…). Aucun fichier n’est déplacé pour l’instant.",
+        title: t("toastScanTitle"),
+        body: t("toastScanBody"),
       });
       const next = ingestScan(await scanLibrary(folder));
-      saveReasonRef.current = "Analyse initiale";
+      saveReasonRef.current = t("reasonInitial");
       setScan(next);
       setExcludeHistory([]);
       setSelectedFolder(defaultPlanFolder(next));
@@ -615,13 +674,13 @@ export function LocalModule({ active = true }: { active?: boolean }) {
       if (dupes > 0) {
         fx.toast({
           kind: "hint",
-          title: `${dupes} doublon${dupes > 1 ? "s" : ""} écarté${dupes > 1 ? "s" : ""}`,
-          body: "Copies du même morceau : hors comptage, hors import. Le meilleur exemplaire reste classé.",
+          title: t("toastDupesCulled", { count: dupes }),
+          body: t("toastDupesCulledBody"),
         });
       }
     } catch (err) {
       setError(toMessage(err));
-      fx.toast({ kind: "warn", title: "Analyse interrompue", body: toMessage(err) });
+      fx.toast({ kind: "warn", title: t("toastScanInterrupted"), body: toMessage(err) });
     } finally {
       setBusy(null);
       setScanProgress(null);
@@ -639,7 +698,7 @@ export function LocalModule({ active = true }: { active?: boolean }) {
     setScanProgress(null);
     try {
       const next = ingestScan(await scanLibrary(root));
-      saveReasonRef.current = "Rescan du dossier";
+      saveReasonRef.current = t("reasonRescan");
       setScan(next);
       setExcludeHistory([]);
       setSelectedFolder(defaultPlanFolder(next));
@@ -653,22 +712,22 @@ export function LocalModule({ active = true }: { active?: boolean }) {
       );
       fx.toast({
         kind: "ok",
-        title: "Analyse à jour",
+        title: t("toastScanUpdated"),
         body: advice.body,
       });
       const dupes = duplicateTracksFrom(allLibraryTracks(next.groups)).length;
       if (dupes > 0) {
         fx.toast({
           kind: "hint",
-          title: `${dupes} doublon${dupes > 1 ? "s" : ""} écarté${dupes > 1 ? "s" : ""}`,
-          body: "Copies du même morceau : hors comptage, hors import.",
+          title: t("toastDupesCulled", { count: dupes }),
+          body: t("toastDupesCulledBodyShort"),
         });
       }
     } catch (err) {
       setError(toMessage(err));
       fx.toast({
         kind: "warn",
-        title: "Impossible d’actualiser",
+        title: t("toastCannotRefresh"),
         body: toMessage(err),
       });
     } finally {
@@ -687,8 +746,8 @@ export function LocalModule({ active = true }: { active?: boolean }) {
     setBusy("lookup");
     fx.toast({
       kind: "go",
-      title: "Détection des genres",
-      body: "On croise noms de fichiers, base Spotify, puis catalogues en ligne. Aucun fichier n’est déplacé.",
+      title: t("toastLookupTitle"),
+      body: t("toastLookupBody"),
     });
     try {
       const extras = duplicateTracksFrom(tracks);
@@ -697,24 +756,28 @@ export function LocalModule({ active = true }: { active?: boolean }) {
         ...allLibraryTracks(enriched.groups),
         ...extras,
       ]);
-      saveReasonRef.current = "Détection auto des genres";
+      saveReasonRef.current = t("reasonAutoDetect");
       setScan(next);
       setSelectedFolder(defaultPlanFolder(next));
       const delta = next.sortedPercent - before;
       fx.flash();
       fx.toast({
         kind: delta > 0 ? "ok" : "hint",
-        title: `${next.sortedPercent}% des titres classés`,
+        title: t("toastLookupDone", { percent: next.sortedPercent }),
         body:
           delta > 0
-            ? `+${delta} points. Encore ${next.unknownCount} titre${next.unknownCount > 1 ? "s" : ""} à ranger à la main si besoin.`
-            : "Peu de nouveaux genres trouvés. Utilise « Classer manuellement » pour le reste.",
+            ? t("toastLookupDelta", {
+                count: next.unknownCount,
+                delta,
+                unknown: next.unknownCount,
+              })
+            : t("toastLookupFew"),
       });
     } catch (err) {
       setError(toMessage(err));
       fx.toast({
         kind: "warn",
-        title: "Détection des genres interrompue",
+        title: t("toastLookupInterrupted"),
         body: toMessage(err),
       });
     } finally {
@@ -732,23 +795,23 @@ export function LocalModule({ active = true }: { active?: boolean }) {
     if (!scan || toWrite.length === 0) {
       fx.toast({
         kind: "warn",
-        title: "Rien à importer",
-        body: "Tout est exclu (parasites, coupés, doublons…) ou il n’y a aucun titre.",
+        title: t("toastNothingToImport"),
+        body: t("toastNothingToImportBody"),
       });
       return;
     }
     if (mode === "move") {
       fx.toast({
         kind: "warn",
-        title: "Tu vas déplacer des fichiers",
-        body: "Les titres quitteront leur emplacement actuel. Une fenêtre de confirmation va s’ouvrir.",
+        title: t("toastWillMove"),
+        body: t("toastWillMoveBody"),
       });
       const ok = await confirmMove(toWrite.length, destination);
       if (!ok) {
         fx.toast({
           kind: "hint",
-          title: "Déplacement annulé",
-          body: "Aucun fichier n’a été modifié.",
+          title: t("toastMoveCancelled"),
+          body: t("toastMoveCancelledBody"),
         });
         return;
       }
@@ -762,15 +825,21 @@ export function LocalModule({ active = true }: { active?: boolean }) {
     const skippedJunk = tracks.length - toWrite.length;
     fx.toast({
       kind: "go",
-      title: mode === "copy" ? "Copie en cours" : "Déplacement en cours",
+      title: mode === "copy" ? t("toastCopying") : t("toastMoving"),
       body:
         skippedJunk > 0
-          ? `Vers ${shortPath(destination)} · ${skippedJunk} exclu${skippedJunk > 1 ? "s" : ""} (merde / doublons)`
+          ? t("toastOrganizeBodySkipped", {
+              path: shortPath(destination),
+              count: skippedJunk,
+            })
           : truncatedGoing > 0
-            ? `Vers ${shortPath(destination)} · ${truncatedGoing} → Coupés à 3:00`
+            ? t("toastOrganizeBodyTruncated", {
+                path: shortPath(destination),
+                count: truncatedGoing,
+              })
             : renameMode === "keep"
-              ? `Vers ${shortPath(destination)}…`
-              : `Vers ${shortPath(destination)} · renommage propre…`,
+              ? t("toastOrganizeBodyKeep", { path: shortPath(destination) })
+              : t("toastOrganizeBodyRename", { path: shortPath(destination) }),
     });
     try {
       const next = await organizeLibrary(
@@ -797,31 +866,25 @@ export function LocalModule({ active = true }: { active?: boolean }) {
         kind: next.errors.length > 0 ? "warn" : "ok",
         title:
           next.copied > 0
-            ? `${next.copied} copié${next.copied > 1 ? "s" : ""}`
+            ? t("resultCopied", { count: next.copied })
             : next.moved > 0
-              ? `${next.moved} déplacé${next.moved > 1 ? "s" : ""}`
-              : "Déjà en place",
+              ? t("resultMoved", { count: next.moved })
+              : t("toastAlreadyInPlace"),
         body:
           next.errors.length > 0
-            ? `${next.errors.length} erreur${next.errors.length > 1 ? "s" : ""}. ${
-                mode === "move"
-                  ? "Actualise l’analyse : certains chemins ont changé."
-                  : "Vérifie le bandeau d’erreurs."
-              }`
-            : truncatedGoing > 0
-              ? `Prêt · dossier « Coupés à 3:00 » dans ${shortPath(next.destination)}.`
-              : `Prêt dans ${shortPath(next.destination)}.`,
+            ? t("resultErrors", { count: next.errors.length })
+            : t("toastOrganizeReady", { path: shortPath(next.destination) }),
       });
       if (mode === "move" && movedOrCopied > 0) {
         fx.toast({
           kind: "hint",
-          title: "Chemins à jour ?",
-          body: "Après un déplacement, clique « Actualiser l’analyse » sur le dossier source (ou analyse la destination).",
+          title: t("toastPathsStale"),
+          body: t("toastPathsStaleBody"),
         });
       }
     } catch (err) {
       setError(toMessage(err));
-      fx.toast({ kind: "warn", title: "Organisation impossible", body: toMessage(err) });
+      fx.toast({ kind: "warn", title: t("toastOrganizeFail"), body: toMessage(err) });
     } finally {
       setBusy(null);
     }
@@ -859,10 +922,10 @@ export function LocalModule({ active = true }: { active?: boolean }) {
         at: active.savedAt,
         percent: active.sortedPercent,
         delta: active.sortedPercent,
-        reason: "État actuel (relance une détection pour détailler)",
+        reason: t("reasonCurrentState"),
       },
     ];
-  }, [scan, recents, activeId]);
+  }, [scan, recents, activeId, t]);
 
   useEffect(() => {
     if (!scan || !selectedFolder) {
@@ -889,21 +952,16 @@ export function LocalModule({ active = true }: { active?: boolean }) {
     <section className="local-stage" data-module="local">
       <header className="local-topbar">
         <div className="local-topbar-copy">
-          <p className="eyebrow">Musique sur ton ordinateur</p>
+          <p className="eyebrow">{t("eyebrow")}</p>
           <h2>
-            <ScrambleText text="Fichiers locaux" />
+            <ScrambleText text={t("title")} />
           </h2>
-          <p className="local-lede">
-            On lit ton dossier (sans réutiliser tes anciens sous-dossiers), on
-            propose un classement par genre BassOrder, puis tu
-            décides de copier ou déplacer. Rien n’est modifié tant que tu ne
-            confirmes pas.
-          </p>
+          <p className="local-lede">{t("lede")}</p>
         </div>
         {root && (
           <p className="local-path" title={root}>
             <span className="local-path-dot" />
-            <span className="local-path-label">Dossier analysé</span>
+            <span className="local-path-label">{t("analyzedFolder")}</span>
             <span className="local-path-value">{root}</span>
           </p>
         )}
@@ -915,13 +973,11 @@ export function LocalModule({ active = true }: { active?: boolean }) {
             disabled={busy !== null}
           >
             {busy === "pick" || busy === "scan"
-              ? "Analyse en cours…"
+              ? t("analyzing")
               : root
-                ? "Choisir un autre dossier"
-                : "Choisir un dossier de musique"}
-            <TipPanel side="bottom">
-              Ouvre l’explorateur Windows pour choisir le dossier à analyser
-            </TipPanel>
+                ? t("chooseOtherFolder")
+                : t("chooseFolder")}
+            <TipPanel side="bottom">{t("chooseFolderTip")}</TipPanel>
           </button>
           {root && (
             <button
@@ -930,10 +986,8 @@ export function LocalModule({ active = true }: { active?: boolean }) {
               onClick={rescan}
               disabled={busy !== null}
             >
-              {busy === "scan" ? "Nouvelle analyse…" : "Actualiser l’analyse"}
-              <TipPanel side="bottom">
-                Relance la lecture des titres (tags, genres). Ne déplace aucun fichier.
-              </TipPanel>
+              {busy === "scan" ? t("refreshingAnalysis") : t("refreshAnalysis")}
+              <TipPanel side="bottom">{t("refreshTip")}</TipPanel>
             </button>
           )}
           {root && (
@@ -943,21 +997,15 @@ export function LocalModule({ active = true }: { active?: boolean }) {
               onClick={() => (activeId ? forgetSaved(activeId) : forgetSaved(root))}
               disabled={busy !== null}
             >
-              Retirer de l’historique
-              <TipPanel side="bottom">
-                Enlève cette analyse de l’historique. Tes fichiers sur le disque ne sont pas touchés.
-              </TipPanel>
+              {t("removeFromHistory")}
+              <TipPanel side="bottom">{t("removeFromHistoryTip")}</TipPanel>
             </button>
           )}
         </div>
       </header>
 
       {!tauri && (
-        <p className="local-hint">
-          Pour analyser un dossier Windows, ouvre BassOrder en application
-          bureau (pas dans le navigateur seul). Lance{" "}
-          <code>pnpm tauri dev</code> depuis PowerShell.
-        </p>
+        <p className="local-hint">{t("needDesktopHint")}</p>
       )}
 
       {error && <p className="local-error">{error}</p>}
@@ -974,23 +1022,19 @@ export function LocalModule({ active = true }: { active?: boolean }) {
               hint={false}
               active={active}
               className="push-eq--sm"
-              label="Égaliseur décoratif"
+              label={t("eqDecorLabel")}
             />
           </div>
           <h3>
-            {recents.length > 0
-              ? "Reprendre une analyse déjà faite"
-              : "Par où commencer ?"}
+            {recents.length > 0 ? t("emptyTitleResume") : t("emptyTitleStart")}
           </h3>
           <p>
-            {recents.length > 0
-              ? "Tes analyses précédentes sont dans Historique (menu de gauche). Tu peux aussi choisir un nouveau dossier ici — on lit les infos des titres sans rien déplacer."
-              : "Clique sur « Choisir un dossier de musique ». BassOrder ignore ta structure actuelle, lit tags / titres / artistes, propose un plan de genres, puis attend ton accord avant d’écrire quoi que ce soit sur le disque."}
+            {recents.length > 0 ? t("emptyBodyResume") : t("emptyBodyStart")}
           </p>
           <ol className="local-steps">
-            <li>Choisir le dossier à analyser</li>
-            <li>Vérifier / compléter les genres proposés</li>
-            <li>Copier ou déplacer les titres dans les dossiers (quand tu es prêt)</li>
+            <li>{t("step1")}</li>
+            <li>{t("step2")}</li>
+            <li>{t("step3")}</li>
           </ol>
         </div>
       )}
@@ -1002,7 +1046,7 @@ export function LocalModule({ active = true }: { active?: boolean }) {
       {scan && busy !== "scan" && busy !== "lookup" && (
         <div className="local-workbench">
           <div className="local-workbench-chrome">
-          <div className="kpi-grid" aria-label="Résumé de l’analyse">
+          <div className="kpi-grid" aria-label={t("kpiSummaryAria")}>
             <div
               className={`kpi kpi-hero fx-frame fx-frame--loud${ringCoverage >= 85 ? " is-accent" : ""}${waste.lossPercent > 0 ? " has-loss" : ""}`}
             >
@@ -1016,78 +1060,113 @@ export function LocalModule({ active = true }: { active?: boolean }) {
                 <span className="kpi-value">
                   <CountUp value={ringCoverage} suffix="%" />
                 </span>
-                <span className="kpi-label">Titres déjà classés</span>
+                <span className="kpi-label">{t("kpiSorted")}</span>
                 <span className="kpi-hint">
                   {scan.unknownCount > 0
-                    ? `Encore ${scan.unknownCount} sans genre (inconnus) — pas 100 %`
+                    ? t("kpiStillUnknown", { count: scan.unknownCount })
                     : ringCoverage >= 85
-                      ? "Objectif 85 % atteint — tu peux créer les dossiers"
-                      : "Objectif conseillé : au moins 85 %"}
+                      ? t("kpiGoalReached")
+                      : t("kpiGoalHint")}
                 </span>
                 {waste.lossCount > 0 && (
-                  <span className="kpi-loss" title={waste.parts.join(" · ")}>
-                    <strong>{waste.lossPercent}%</strong> de perte
-                    <em>{waste.parts.join(" · ")}</em>
+                  <span
+                    className="kpi-loss"
+                    title={formatWasteParts(
+                      t,
+                      waste.duplicates,
+                      waste.unread,
+                      waste.truncated,
+                    ).join(" · ")}
+                  >
+                    <strong>
+                      {t("kpiLossPercent", { percent: waste.lossPercent })}
+                    </strong>
+                    <em>
+                      {formatWasteParts(
+                        t,
+                        waste.duplicates,
+                        waste.unread,
+                        waste.truncated,
+                      ).join(" · ")}
+                    </em>
                   </span>
                 )}
                 {waste.lossCount === 0 && waste.excludedCount > 0 && (
-                  <span className="kpi-loss is-excluded" title={waste.excludedParts.join(" · ")}>
-                    <strong>0%</strong> de perte dans la barre
+                  <span
+                    className="kpi-loss is-excluded"
+                    title={formatWasteParts(
+                      t,
+                      exclude.duplicates ? waste.duplicates : 0,
+                      exclude.parasites ? waste.unread : 0,
+                      exclude.truncated ? waste.truncated : 0,
+                    ).join(" · ")}
+                  >
+                    <strong>{t("kpiZeroLossBar")}</strong>
                     <em>
-                      {waste.excludedCount} exclu
-                      {waste.excludedCount > 1 ? "s" : ""} · Annuler pour
-                      recompter
+                      {t("kpiExcludedRecount", { count: waste.excludedCount })}
                     </em>
                   </span>
                 )}
               </div>
             </div>
             <Metric
-              label="Titres comptés"
+              label={t("metricTracks")}
               value={waste.pool > 0 ? waste.pool : scan.fileCount}
               hint={
                 waste.excludedCount > 0
-                  ? `Hors ${waste.excludedCount} exclu${waste.excludedCount > 1 ? "s" : ""} (réintégrables)`
+                  ? t("metricTracksHintExcluded", { count: waste.excludedCount })
                   : duplicateCount > 0
-                    ? `Dont ${duplicateCount} doublon${duplicateCount > 1 ? "s" : ""} encore dans la barre`
-                    : "Fichiers audio valides dans le dossier"
+                    ? t("metricTracksHintDupes", { count: duplicateCount })
+                    : t("metricTracksHintOk")
               }
               delay={1}
             />
             <Metric
-              label="Dossiers à créer"
+              label={t("metricFolders")}
               value={readyFolders}
               hint={
                 scan.unknownCount > 0
-                  ? `${scan.unknownCount} titre${scan.unknownCount > 1 ? "s" : ""} encore sans genre`
-                  : "Tous les titres ont un dossier"
+                  ? t("metricFoldersHintUnknown", { count: scan.unknownCount })
+                  : t("metricFoldersHintOk")
               }
               delay={2}
             />
             {waste.lossCount > 0 ? (
               <Metric
-                label="Perte"
+                label={t("metricLoss")}
                 value={waste.lossCount}
-                hint={`${waste.lossPercent}% · ${waste.parts.join(" · ")}`}
+                hint={`${waste.lossPercent}% · ${formatWasteParts(
+                  t,
+                  waste.duplicates,
+                  waste.unread,
+                  waste.truncated,
+                ).join(" · ")}`}
                 delay={3}
                 tone="danger"
               />
             ) : waste.excludedCount > 0 ? (
               <Metric
-                label="Exclus"
+                label={t("metricExcluded")}
                 value={waste.excludedCount}
-                hint={`${waste.excludedParts.join(" · ")} · Annuler pour recompter`}
+                hint={t("metricExcludedHint", {
+                  parts: formatWasteParts(
+                    t,
+                    exclude.duplicates ? waste.duplicates : 0,
+                    exclude.parasites ? waste.unread : 0,
+                    exclude.truncated ? waste.truncated : 0,
+                  ).join(" · "),
+                })}
                 delay={3}
               />
             ) : (
               <Metric
-                label="Genres détectés"
+                label={t("metricGenres")}
                 value={
                   scan.groups.filter(
                     (g) => g.folder !== DUPLICATE_FOLDER && g.genre !== DUPLICATE_GENRE,
                   ).length
                 }
-                hint="Groupes proposés dans le plan"
+                hint={t("metricGenresHint")}
                 delay={3}
               />
             )}
@@ -1100,7 +1179,7 @@ export function LocalModule({ active = true }: { active?: boolean }) {
           {(waste.duplicates > 0 || waste.unread > 0 || waste.truncated > 0) && (
             <section
               className={`exclude-panel fx-frame fx-frame--soft${excludeCollapsed ? " is-collapsed" : ""}`}
-              aria-label="Exclure de l’import"
+              aria-label={t("excludeAria")}
             >
               <span className="spin-border" aria-hidden />
               <button
@@ -1112,39 +1191,32 @@ export function LocalModule({ active = true }: { active?: boolean }) {
                 <span className="panel-collapse-chevron" aria-hidden>
                   {excludeCollapsed ? "▸" : "▾"}
                 </span>
-                <span className="exclude-panel-title">Nettoyer l’import</span>
+                <span className="exclude-panel-title">{t("excludeTitle")}</span>
                 {excludeCollapsed && (
                   <span className="panel-collapse-summary">
                     {[
                       exclude.duplicates && waste.duplicates > 0
-                        ? `${waste.duplicates} doublon${waste.duplicates > 1 ? "s" : ""}`
+                        ? t("summaryDuplicates", { count: waste.duplicates })
                         : null,
                       exclude.truncated && waste.truncated > 0
-                        ? `${waste.truncated} coupé${waste.truncated > 1 ? "s" : ""}`
+                        ? t("summaryTruncatedShort", { count: waste.truncated })
                         : null,
                       exclude.parasites && waste.unread > 0
-                        ? `${waste.unread} parasite${waste.unread > 1 ? "s" : ""}`
+                        ? t("summaryParasites", { count: waste.unread })
                         : null,
                     ]
                       .filter(Boolean)
-                      .join(" · ") || "Rien exclu pour l’instant"}
+                      .join(" · ") || t("excludeNothingYet")}
                   </span>
                 )}
                 <span className="panel-collapse-hint">
-                  {excludeCollapsed ? "Déplier" : "Réduire"}
+                  {excludeCollapsed ? t("expand") : t("collapse")}
                 </span>
               </button>
               {!excludeCollapsed && (
                 <>
               <div className="exclude-panel-copy">
-                <p>
-                  Coche ce que tu ne veux <strong>pas</strong> copier ni
-                  déplacer — ça disparaît aussi du plan. Les fichiers restent
-                  sur le disque, ils ne polluent juste plus le tri.{" "}
-                  <strong>Tout exclure</strong> les retire aussi de la barre.{" "}
-                  <strong>Annuler</strong> ou <strong>Tout réintégrer</strong>{" "}
-                  pour revenir en arrière.
-                </p>
+                <p>{t("excludeHelp")}</p>
               </div>
               <div className="exclude-panel-toggles">
                 {waste.duplicates > 0 && (
@@ -1160,7 +1232,7 @@ export function LocalModule({ active = true }: { active?: boolean }) {
                       }
                     />
                     <span>
-                      Doublons <em>({waste.duplicates})</em>
+                      {t("duplicates")} <em>({waste.duplicates})</em>
                     </span>
                   </label>
                 )}
@@ -1177,7 +1249,7 @@ export function LocalModule({ active = true }: { active?: boolean }) {
                       }
                     />
                     <span>
-                      Parasites <em>({waste.unread})</em>
+                      {t("parasites")} <em>({waste.unread})</em>
                     </span>
                   </label>
                 )}
@@ -1194,7 +1266,7 @@ export function LocalModule({ active = true }: { active?: boolean }) {
                       }
                     />
                     <span>
-                      Coupés 3:00 <em>({waste.truncated})</em>
+                      {t("truncated")} <em>({waste.truncated})</em>
                     </span>
                   </label>
                 )}
@@ -1205,15 +1277,12 @@ export function LocalModule({ active = true }: { active?: boolean }) {
                   disabled={excludeHistory.length === 0}
                   title={
                     excludeHistory.length === 0
-                      ? "Pas encore d’étape à annuler"
-                      : "Revenir au filtre précédent"
+                      ? t("undoNoneTitle")
+                      : t("undoPrevTitle")
                   }
                 >
-                  Annuler
-                  <TipPanel side="bottom">
-                    Revient à l’étape d’avant (barre + plan). Rien n’est
-                    modifié sur le disque.
-                  </TipPanel>
+                  {t("undo")}
+                  <TipPanel side="bottom">{t("undoTip")}</TipPanel>
                 </button>
                 <button
                   type="button"
@@ -1230,11 +1299,9 @@ export function LocalModule({ active = true }: { active?: boolean }) {
                     }
                   }}
                 >
-                  {junkAllOut ? "Tout réintégrer" : "Tout exclure"}
+                  {junkAllOut ? t("reincludeAll") : t("excludeAll")}
                   <TipPanel side="bottom">
-                    {junkAllOut
-                      ? "Remet doublons, parasites et coupés 3:00 dans la barre et le plan."
-                      : "Retire doublons, parasites et coupés 3:00 de la barre, du plan et de l’import."}
+                    {junkAllOut ? t("reincludeAllTip") : t("excludeAllTip")}
                   </TipPanel>
                 </button>
               </div>
@@ -1243,26 +1310,20 @@ export function LocalModule({ active = true }: { active?: boolean }) {
                 className="exclude-panel-foot"
                 aria-live="polite"
               >
-                Import prévu :{" "}
-                <strong>
-                  {importTracks.length} titre
-                  {importTracks.length > 1 ? "s" : ""}
-                </strong>
+                {t("importPlanned")}{" "}
+                <strong>{t("importTracks", { count: importTracks.length })}</strong>
                 {tracks.length - importTracks.length > 0 ? (
                   <>
                     {" "}
                     ·{" "}
                     <span className="exclude-panel-left">
-                      {tracks.length - importTracks.length} laissé
-                      {tracks.length - importTracks.length > 1 ? "s" : ""} de
-                      côté (hors plan)
+                      {t("importLeftAside", {
+                        count: tracks.length - importTracks.length,
+                      })}
                     </span>
                   </>
                 ) : (
-                  <>
-                    {" "}
-                    · tout le plan partira à l’import
-                  </>
+                  <> {t("importAllGoing")}</>
                 )}
               </p>
                 </>
@@ -1273,19 +1334,23 @@ export function LocalModule({ active = true }: { active?: boolean }) {
           <div className="command-deck fx-frame fx-frame--loud">
             <span className="spin-border" aria-hidden />
             <div className="command-copy">
-              <h3>Que faire ensuite ?</h3>
+              <h3>{t("nextTitle")}</h3>
               <p className="local-note">
                 {scan.unknownCount > 0
                   ? youtubeDump
-                    ? "Beaucoup de titres sans genre (souvent des dumps YouTube). Lance d’abord la détection auto, puis classe manuellement ce qui reste."
-                    : "Certains titres n’ont pas de genre clair. Complète automatiquement, puis range le reste à la main si besoin."
+                    ? t("nextYoutube")
+                    : t("nextUnknown")
                   : readyFolders === 0
-                    ? "Aucun dossier genre prêt. Classe d’abord des titres (hors « Sans genre » / « Illisible »), puis importe."
-                    : `Prêt à importer : ${readyFolders} dossier${readyFolders > 1 ? "s" : ""} genre · ${scan.fileCount} titre${scan.fileCount > 1 ? "s" : ""}${
-                        duplicateCount > 0
-                          ? ` · ${duplicateCount} doublon${duplicateCount > 1 ? "s" : ""} ignoré${duplicateCount > 1 ? "s" : ""}`
-                          : ""
-                      }. Tu choisiras où créer la bibliothèque triée sur ton PC.`}
+                    ? t("nextNoReady")
+                    : t("nextReady", {
+                        count: readyFolders,
+                        folders: readyFolders,
+                        tracks: scan.fileCount,
+                        dupes:
+                          duplicateCount > 0
+                            ? t("dupesIgnored", { count: duplicateCount })
+                            : "",
+                      })}
               </p>
               <p className="live-hint">
                 {
@@ -1307,10 +1372,8 @@ export function LocalModule({ active = true }: { active?: boolean }) {
                     onClick={guessGenres}
                     disabled={busy !== null}
                   >
-                    Deviner les genres automatiquement
-                    <TipPanel side="bottom">
-                      Cherche les genres via Spotify, noms de fichiers, iTunes / Deezer. Ne déplace aucun fichier.
-                    </TipPanel>
+                    {t("guessGenres")}
+                    <TipPanel side="bottom">{t("guessGenresTip")}</TipPanel>
                   </button>
                   <button
                     type="button"
@@ -1319,16 +1382,14 @@ export function LocalModule({ active = true }: { active?: boolean }) {
                       setTriageOpen(true);
                       fx.toast({
                         kind: "go",
-                        title: "Classement manuel",
-                        body: "Clique un dossier puis confirme. Touches 1–9 = validation directe. Esc ferme.",
+                        title: t("toastManualTitle"),
+                        body: t("toastManualBody"),
                       });
                     }}
                     disabled={busy !== null}
                   >
-                    Classer manuellement ({scan.unknownCount})
-                    <TipPanel side="bottom">
-                      Range un par un les titres encore sans genre
-                    </TipPanel>
+                    {t("manualSort", { count: scan.unknownCount })}
+                    <TipPanel side="bottom">{t("manualSortTip")}</TipPanel>
                   </button>
                 </>
               )}
@@ -1339,8 +1400,8 @@ export function LocalModule({ active = true }: { active?: boolean }) {
                   setOrganizeOpen(true);
                   fx.toast({
                     kind: "go",
-                    title: "Importer le tri",
-                    body: "Choisis où créer la bibliothèque, copie ou déplacement, puis lance.",
+                    title: t("toastImportTitle"),
+                    body: t("toastImportBody"),
                   });
                 }}
                 disabled={
@@ -1351,36 +1412,32 @@ export function LocalModule({ active = true }: { active?: boolean }) {
                 }
                 title={
                   readyFolders === 0
-                    ? "Classe d’abord des titres dans des genres avant d’importer"
+                    ? t("importDisabledNoFolders")
                     : importTracks.length === 0
-                      ? "Tout est exclu — décoche une catégorie de nettoyage"
-                      : "Choisir un dossier et créer l’arborescence par genre sur ton PC"
+                      ? t("importDisabledAllExcluded")
+                      : t("importDisabledOk")
                 }
               >
                 {busy === "organize"
-                  ? "Écriture sur le disque…"
-                  : `Importer le tri (${readyFolders} dossiers · ${importTracks.length})`}
-                <TipPanel side="bottom">
-                  Explique le process, crée un dossier où tu veux, puis copie ou déplace les titres
-                </TipPanel>
+                  ? t("importSortWriting")
+                  : t("importSort", {
+                      folders: readyFolders,
+                      tracks: importTracks.length,
+                    })}
+                <TipPanel side="bottom">{t("importSortTip")}</TipPanel>
               </button>
             </div>
-            <p className="action-legend">
-              <strong>Importer le tri</strong> = créer les dossiers genre où tu veux sur le PC.{" "}
-              <strong>Copier</strong> (recommandé) laisse les originaux intacts.{" "}
-              <strong>Actualiser l’analyse</strong> = relire le dossier sans écrire.
-            </p>
+            <p className="action-legend">{t("actionLegend")}</p>
           </div>
 
           {result && <ResultBanner result={result} />}
           </div>
 
           {scan.fileCount === 0 ? (
-            <p className="local-note">Aucun titre audio trouvé dans ce dossier.</p>
+            <p className="local-note">{t("noAudioFound")}</p>
           ) : !active ? (
             <p className="local-note">
-              Analyse en mémoire ({scan.fileCount} titres) — les jobs continuent en
-              fond. Reviens ici pour afficher le plan.
+              {t("analysisInMemory", { count: scan.fileCount })}
             </p>
           ) : (
             <div className="plan-workspace">
@@ -1390,31 +1447,31 @@ export function LocalModule({ active = true }: { active?: boolean }) {
                   <input
                     type="search"
                     className="plan-search"
-                    placeholder="Rechercher un genre…"
+                    placeholder={t("searchGenrePlaceholder")}
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    aria-label="Rechercher un genre dans le plan"
+                    aria-label={t("searchGenreAria")}
                   />
                   <div
                     className="mode-toggle sort-toggle"
                     role="group"
-                    aria-label="Tri"
+                    aria-label={t("sortAria")}
                   >
                     <button
                       type="button"
                       className={sortKey === "count" ? "is-active" : ""}
                       onClick={() => setSortKey("count")}
-                      title="Trier les dossiers du plus rempli au moins rempli"
+                      title={t("sortByCountTitle")}
                     >
-                      Plus fournis
+                      {t("sortByCount")}
                     </button>
                     <button
                       type="button"
                       className={sortKey === "name" ? "is-active" : ""}
                       onClick={() => setSortKey("name")}
-                      title="Trier les dossiers par ordre alphabétique"
+                      title={t("sortByNameTitle")}
                     >
-                      A → Z
+                      {t("sortByName")}
                     </button>
                   </div>
                 </div>
@@ -1475,7 +1532,7 @@ export function LocalModule({ active = true }: { active?: boolean }) {
                   )}
                 </VirtualList>
                 {sortedGroups.length === 0 && (
-                  <p className="folder-empty">Aucun genre pour ce filtre.</p>
+                  <p className="folder-empty">{t("noGenreForFilter")}</p>
                 )}
               </aside>
 
@@ -1507,7 +1564,7 @@ export function LocalModule({ active = true }: { active?: boolean }) {
                     }}
                   />
                 ) : (
-                  <p className="local-note">Sélectionne un dossier à gauche.</p>
+                  <p className="local-note">{t("selectFolderLeft")}</p>
                 )}
               </div>
             </div>
@@ -1628,6 +1685,7 @@ function FolderRow({
   pendingCount?: number;
   onSelect: () => void;
 }) {
+  const { t } = useTranslation("local");
   const share = totalFiles > 0 ? Math.round((group.tracks.length / totalFiles) * 100) : 0;
   const bar = Math.max(6, Math.round((group.tracks.length / maxCount) * 100));
   const special =
@@ -1637,10 +1695,7 @@ function FolderRow({
     group.genre === "Illisible" ||
     group.folder === TRUNCATED_FOLDER ||
     group.folder === DUPLICATE_FOLDER;
-  const label =
-    group.folder === TRUNCATED_FOLDER || group.folder === DUPLICATE_FOLDER
-      ? group.genre
-      : group.folder;
+  const label = displayPlanLabel(group, t);
   const stillInGenres = pendingCount ?? 0;
 
   return (
@@ -1651,9 +1706,9 @@ function FolderRow({
       style={{ animationDelay: `${Math.min(index, 12) * 0.03}s` }}
       title={
         skip
-          ? "Copies du même morceau — exclues du comptage et de l’import"
+          ? t("folderSkipTitle")
           : warn
-            ? "Fichiers qui durent exactement 3:00 — souvent des téléchargements incomplets"
+            ? t("folderWarnTitle")
             : undefined
       }
     >
@@ -1666,12 +1721,12 @@ function FolderRow({
       <div className="folder-row-meta">
         <span>
           {skip
-            ? "Exclus du tri, du comptage et de l’import"
+            ? t("folderSkipMeta")
             : warn
               ? stillInGenres > 0
-                ? `${stillInGenres} encore dans d’autres dossiers (vue, pas dossier disque)`
-                : "Isolés dans le plan · durée pile 3:00"
-              : `${share}% de la bibliothèque`}
+                ? t("folderWarnPending", { count: stillInGenres })
+                : t("folderWarnIsolated")
+              : t("folderShare", { percent: share })}
         </span>
         {!warn && !skip && <span className="folder-path">/{group.folder}</span>}
       </div>
@@ -1702,6 +1757,14 @@ function FolderDetail({
   onIsolate?: (paths?: string[]) => void;
   onPreview: (track: Track, queue: Track[]) => void;
 }) {
+  const { t } = useTranslation("local");
+  const trackSortOptions: { key: TrackSortKey; label: string }[] = [
+    { key: "title", label: t("colTitle") },
+    { key: "artist", label: t("colArtist") },
+    { key: "album", label: t("colAlbum") },
+    { key: "bpm", label: t("colBpm") },
+    { key: "duration", label: t("colDuration") },
+  ];
   const artistEntries = useMemo(() => {
     const map = new Map<string, number>();
     for (const track of group.tracks) {
@@ -1709,7 +1772,7 @@ function FolderDetail({
       map.set(name, (map.get(name) ?? 0) + 1);
     }
     return [...map.entries()].sort(
-      (a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "fr"),
+      (a, b) => b[1] - a[1] || a[0].localeCompare(b[0], appLoc()),
     );
   }, [group.tracks]);
 
@@ -1750,55 +1813,51 @@ function FolderDetail({
         <div>
           <p className="plan-detail-kicker">
             {isDuplicateView
-              ? "Copies écartées — pas un dossier disque"
+              ? t("detailKickerDupes")
               : isTruncatedView
                 ? pendingIsolateCount > 0
-                  ? "Vue durée — pas encore un dossier disque"
-                  : "Dossier réel dans le plan"
+                  ? t("detailKickerTruncPending")
+                  : t("detailKickerTruncReady")
                 : artistFilter
-                  ? "Artiste détecté"
-                  : "Dossier du plan"}
+                  ? t("detailKickerArtist")
+                  : t("detailKickerFolder")}
           </p>
           <h4>
             {isDuplicateView
-              ? "Doublons"
+              ? t("detailTitleDupes")
               : isTruncatedView
-                ? "Coupés à 3:00"
-                : (artistFilter ?? group.folder)}
+                ? t("detailTitleTrunc")
+                : artistFilter
+                  ? displayArtistName(artistFilter, t)
+                  : displayPlanLabel(group, t)}
           </h4>
           <p
             className="plan-detail-path"
             title={
               isDuplicateView
-                ? "Même morceau en plusieurs fichiers — le meilleur exemplaire reste classé"
+                ? t("detailHintDupes")
                 : isTruncatedView
-                  ? "Durée exacte 3:00 — souvent un téléchargement / rip incomplet"
+                  ? t("detailHintTrunc")
                   : artistFilter
-                    ? `Tous les titres de ${artistFilter} dans la bibliothèque`
-                    : `Sera créé sous la destination à l’import : ${group.folder}`
+                    ? t("detailHintArtist", { artist: displayArtistName(artistFilter, t) })
+                    : t("detailHintFolder", { folder: group.folder })
             }
           >
             {isDuplicateView
-              ? "Exclus du comptage et de l’import — ils ne seront pas copiés"
+              ? t("detailPathDupes")
               : isTruncatedView
                 ? pendingIsolateCount > 0
-                  ? `${pendingIsolateCount} encore classés dans un genre · isole-les ou coche l’option à l’import`
-                  : "Isolés dans le plan · dossier « Coupés à 3:00 » à l’import"
+                  ? t("detailPathTruncPending", { count: pendingIsolateCount })
+                  : t("detailPathTruncReady")
                 : artistFilter
-                  ? `Bibliothèque · ${sortedTracks.length} titre${sortedTracks.length > 1 ? "s" : ""}`
-                  : `À l’import → …\\${group.folder}`}
+                  ? t("detailPathArtist", { count: sortedTracks.length })
+                  : t("detailPathImport", { folder: group.folder })}
           </p>
         </div>
         <div className="plan-detail-stats">
-          <span>
-            <strong>{sortedTracks.length}</strong> titre
-            {sortedTracks.length > 1 ? "s" : ""}
-          </span>
+          <span>{t("detailTracksCount", { count: sortedTracks.length })}</span>
           {!artistFilter && (
-            <span>
-              <strong>{artistEntries.length}</strong> artiste
-              {artistEntries.length > 1 ? "s" : ""}
-            </span>
+            <span>{t("detailArtistsCount", { count: artistEntries.length })}</span>
           )}
           {artistFilter && (
             <button
@@ -1806,7 +1865,7 @@ function FolderDetail({
               className="artist-filter-clear"
               onClick={() => onArtistFilter(null)}
             >
-              Tout afficher
+              {t("showAll")}
             </button>
           )}
         </div>
@@ -1814,44 +1873,35 @@ function FolderDetail({
 
       {isTruncatedView && (
         <div className="truncated-actions">
-          <p className="local-note local-note-warn">
-            Ces fichiers affichent exactement <strong>3:00</strong>. Beaucoup sont
-            coupés au milieu. Cette liste est une <strong>vue</strong> : pour un
-            vrai dossier sur le disque, isole-les ici ou coche l’option à
-            l’import (« Coupés à 3:00 »).
-          </p>
+          <p className="local-note local-note-warn">{t("truncNote")}</p>
           {onIsolate && pendingVisible.length > 0 && (
             <button
               type="button"
               className="btn btn-secondary truncated-isolate-btn"
-              onClick={() => onIsolate(pendingVisible.map((t) => t.path))}
+              onClick={() => onIsolate(pendingVisible.map((tr) => tr.path))}
             >
               {artistFilter
-                ? `Isoler ${pendingVisible.length} titre${pendingVisible.length > 1 ? "s" : ""} de ${artistFilter}`
-                : `Retirer des autres dossiers (${pendingVisible.length})`}
+                ? t("isolateArtist", {
+                    count: pendingVisible.length,
+                    artist: displayArtistName(artistFilter, t),
+                  })
+                : t("isolateOthers", { count: pendingVisible.length })}
             </button>
           )}
           {onIsolate && pendingIsolateCount === 0 && (
-            <p className="local-note">
-              Tous ces titres sont déjà uniquement dans « Coupés à 3:00 ».
-            </p>
+            <p className="local-note">{t("alreadyOnlyTrunc")}</p>
           )}
         </div>
       )}
 
       {isDuplicateView && (
         <div className="truncated-actions">
-          <p className="local-note local-note-skip">
-            Même morceau en plusieurs fichiers (titre / artiste, ou nom presque
-            identique). On garde le <strong>meilleur exemplaire</strong>{" "}
-            (qualité, tags, durée) dans le plan. Ces copies sont{" "}
-            <strong>hors comptage</strong> et <strong>ne seront pas importées</strong>.
-          </p>
+          <p className="local-note local-note-skip">{t("dupeNote")}</p>
         </div>
       )}
 
       {artists.length > 0 && (
-        <div className="artist-chips" aria-label="Artistes du dossier">
+        <div className="artist-chips" aria-label={t("artistsAria")}>
           {artists.map(([name, count]) => {
             const active = !!artistFilter && sameArtist(artistFilter, name);
             return (
@@ -1860,10 +1910,12 @@ function FolderDetail({
                 type="button"
                 className={`artist-chip${active ? " is-active" : ""}`}
                 aria-pressed={active}
-                title={`Voir les titres de ${name}`}
+                title={t("artistChipTitle", {
+                  name: displayArtistName(name, t),
+                })}
                 onClick={() => toggleArtist(name)}
               >
-                {name}
+                {displayArtistName(name, t)}
                 <em>{count}</em>
               </button>
             );
@@ -1872,13 +1924,13 @@ function FolderDetail({
       )}
 
       <div className="track-sort-bar">
-        <span className="track-sort-label">Trier</span>
+        <span className="track-sort-label">{t("sortLabel")}</span>
         <div
           className="mode-toggle sort-toggle track-sort-toggle"
           role="group"
-          aria-label="Tri des titres"
+          aria-label={t("trackSortAria")}
         >
-          {TRACK_SORT_OPTIONS.map(({ key, label }) => (
+          {trackSortOptions.map(({ key, label }) => (
             <button
               key={key}
               type="button"
@@ -1924,22 +1976,31 @@ function FolderDetail({
                   <span className="track-artist">
                     {isDuplicateView
                       ? [
-                          track.artist || "Artiste inconnu",
+                          displayArtistName(track.artist?.trim() || UNKNOWN_ARTIST, t),
                           keeper
-                            ? `copie de ${keeper.fileName}`
-                            : "copie",
+                            ? t("copyOf", { file: keeper.fileName })
+                            : t("copy"),
                         ].join(" · ")
                       : isTruncatedView
                         ? [
-                            track.artist || "Artiste inconnu",
-                            pending ? track.folder : "isolé",
+                            displayArtistName(track.artist?.trim() || UNKNOWN_ARTIST, t),
+                            pending ? track.folder : t("isolated"),
                           ]
                             .filter(Boolean)
                             .join(" · ")
                         : artistFilter
-                          ? [track.genre, track.album].filter(Boolean).join(" · ") ||
-                            track.fileName
-                          : track.artist || "Artiste inconnu"}
+                          ? [
+                              track.genre
+                                ? displayKnownLabel(track.genre, t)
+                                : null,
+                              track.album,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ") || track.fileName
+                          : displayArtistName(
+                              track.artist?.trim() || UNKNOWN_ARTIST,
+                              t,
+                            )}
                     {track.durationSecs != null && (
                       <em
                         className={
@@ -1957,8 +2018,8 @@ function FolderDetail({
                       ? track.fileName
                       : isTruncatedView
                         ? pending
-                          ? track.folder
-                          : "Coupés à 3:00"
+                          ? displayKnownLabel(track.folder, t)
+                          : t("detailTitleTrunc")
                         : track.fileName}
                   </span>
                 </button>
@@ -1966,10 +2027,10 @@ function FolderDetail({
                   <button
                     type="button"
                     className="track-isolate-btn"
-                    title="Retirer des dossiers genre — uniquement dans Coupés à 3:00"
+                    title={t("isolateTitle")}
                     onClick={() => onIsolate([track.path])}
                   >
-                    Isoler
+                    {t("isolate")}
                   </button>
                 )}
               </div>
@@ -1977,12 +2038,16 @@ function FolderDetail({
           );
         })}
         {sortedTracks.length === 0 && (
-          <li className="track-more">Aucun titre pour cet artiste.</li>
+          <li className="track-more">{t("noTracksForArtist")}</li>
         )}
         {sortedTracks.length > 100 && (
           <li className="track-more">
-            + {sortedTracks.length - 100} autres titres
-            {artistFilter ? " pour cet artiste" : " dans ce dossier"}
+            {t("moreTracks", {
+              count: sortedTracks.length - 100,
+              suffix: artistFilter
+                ? t("moreTracksArtist")
+                : t("moreTracksFolder"),
+            })}
           </li>
         )}
       </ul>
@@ -1991,17 +2056,17 @@ function FolderDetail({
 }
 
 function trackArtistName(track: Track): string {
-  return track.artist?.trim() || "Artiste inconnu";
+  return track.artist?.trim() || UNKNOWN_ARTIST;
 }
 
 function sameArtist(a: string, b: string): boolean {
-  return a.localeCompare(b, "fr", { sensitivity: "base" }) === 0;
+  return a.localeCompare(b, appLoc(), { sensitivity: "base" }) === 0;
 }
 
 function sortTracks(tracks: Track[], key: TrackSortKey): Track[] {
   return [...tracks].sort((a, b) => {
     const byTitle = () =>
-      (a.title || a.fileName).localeCompare(b.title || b.fileName, "fr", {
+      (a.title || a.fileName).localeCompare(b.title || b.fileName, appLoc(), {
         sensitivity: "base",
       });
 
@@ -2040,12 +2105,13 @@ function sortTracks(tracks: Track[], key: TrackSortKey): Track[] {
     if (!left) return 1;
     if (!right) return -1;
     return (
-      left.localeCompare(right, "fr", { sensitivity: "base" }) || byTitle()
+      left.localeCompare(right, appLoc(), { sensitivity: "base" }) || byTitle()
     );
   });
 }
 
 function ResultBanner({ result }: { result: OrganizeResult }) {
+  const { t } = useTranslation("local");
   return (
     <div className="local-result">
       {result.destination && (
@@ -2054,33 +2120,28 @@ function ResultBanner({ result }: { result: OrganizeResult }) {
         </span>
       )}
       {result.copied > 0 && (
-        <span>
-          {result.copied} copié{result.copied > 1 ? "s" : ""}
-        </span>
+        <span>{t("resultCopied", { count: result.copied })}</span>
       )}
       {result.moved > 0 && (
-        <span>
-          {result.moved} déplacé{result.moved > 1 ? "s" : ""}
-        </span>
+        <span>{t("resultMoved", { count: result.moved })}</span>
       )}
-      {result.skipped > 0 && <span>{result.skipped} déjà en place</span>}
+      {result.skipped > 0 && (
+        <span>{t("resultSkipped", { count: result.skipped })}</span>
+      )}
       {result.copied === 0 && result.moved === 0 && result.skipped > 0 && (
-        <span>Rien à faire — les titres sont déjà triés.</span>
+        <span>{t("resultNothing")}</span>
       )}
       {result.errors.length > 0 && (
         <>
           <p className="local-note local-note-warn">
-            {result.errors.length} erreur
-            {result.errors.length > 1 ? "s" : ""} — l’écriture a pu être
-            partielle. En mode déplacement, actualise l’analyse avant de
-            réessayer.
+            {t("resultErrors", { count: result.errors.length })}
           </p>
           <ul>
             {result.errors.slice(0, 12).map((item) => (
               <li key={item}>{item}</li>
             ))}
             {result.errors.length > 12 && (
-              <li>+ {result.errors.length - 12} autres…</li>
+              <li>{t("resultMoreErrors", { count: result.errors.length - 12 })}</li>
             )}
           </ul>
         </>
@@ -2100,17 +2161,17 @@ function shortPath(path: string): string {
 function formatSavedAt(ts: number): string {
   const delta = Date.now() - ts;
   if (delta < 60_000) {
-    return "à l’instant";
+    return i18n.t("savedJustNow", { ns: "local" });
   }
   if (delta < 3_600_000) {
     const m = Math.max(1, Math.round(delta / 60_000));
-    return `il y a ${m} min`;
+    return i18n.t("savedMinutesAgo", { ns: "local", count: m });
   }
   if (delta < 86_400_000) {
     const h = Math.max(1, Math.round(delta / 3_600_000));
-    return `il y a ${h} h`;
+    return i18n.t("savedHoursAgo", { ns: "local", count: h });
   }
-  return new Date(ts).toLocaleString("fr-FR", {
+  return new Date(ts).toLocaleString(appLoc(), {
     day: "numeric",
     month: "short",
     hour: "2-digit",
@@ -2156,11 +2217,11 @@ function rebuildScan(scan: ScanResult, allTracks: Track[]): ScanResult {
   const groups = [...map.values()].sort(
     (a, b) =>
       b.tracks.length - a.tracks.length ||
-      a.genre.localeCompare(b.genre, "fr", { sensitivity: "base" }),
+      a.genre.localeCompare(b.genre, appLoc(), { sensitivity: "base" }),
   );
   const counted = countableTracks(nextTracks);
-  const unknownCount = counted.filter((t) => t.genre === "Sans genre").length;
-  const unreadCount = counted.filter((t) => t.genre === "Illisible").length;
+  const unknownCount = counted.filter((tr) => tr.genre === "Sans genre").length;
+  const unreadCount = counted.filter((tr) => tr.genre === "Illisible").length;
   const sorted = counted.length - unknownCount - unreadCount;
   return {
     ...scan,
@@ -2180,5 +2241,5 @@ function toMessage(err: unknown): string {
   if (err instanceof Error) {
     return err.message;
   }
-  return "Une erreur est survenue.";
+  return i18n.t("genericError", { ns: "local" });
 }

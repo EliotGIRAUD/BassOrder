@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { intlLocale, type AppLocale } from "../i18n";
 import { useExperience } from "../ui/Experience";
 import { PushRing } from "../ui/push";
 import { CountUp, ScrambleText } from "../ui/motion";
@@ -67,6 +69,9 @@ function dismissAvatarOffer(userId: string, avatarUrl: string): void {
 }
 
 export function SpotifyModule({ live = true }: { live?: boolean }) {
+  const { t, i18n } = useTranslation("spotify");
+  const { t: tc } = useTranslation("common");
+  const loc = intlLocale((i18n.language.startsWith("fr") ? "fr" : "en") as AppLocale);
   const tauri = isTauri();
   const fx = useExperience();
   const { user, setAvatar } = useUserSession();
@@ -280,10 +285,10 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
             kind: "ok",
             title: profile.name,
             body: next.connected
-              ? `${next.knowledge.displayName ?? "Compte lié"} · ${next.knowledge.likedCount} likes · dictionnaire de ce profil.`
+              ? t("toastProfileSwitchConnected", { count: next.knowledge.likedCount })
               : next.hasStoredAuth
-                ? "Session Spotify à raviver — un clic sur Connecter suffit (souvent sans login)."
-                : "Profil actif — connecte Spotify pour importer les likes de ce compte.",
+                ? t("toastProfileSwitchStored")
+                : t("toastProfileSwitchIdle"),
           });
         })
         .catch((err) => setError(toMessage(err)))
@@ -346,10 +351,10 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
           kind: "ok",
           title: profile.name,
           body: next.connected
-            ? `Dictionnaire de ce profil · ${next.knowledge.likedCount} likes.`
+            ? t("toastProfileSwitchConnected", { count: next.knowledge.likedCount })
             : next.hasStoredAuth
-              ? "Session à raviver — Connecter reprend sans tout recommencer."
-              : "Profil actif — session séparée des autres comptes.",
+              ? t("toastProfileSwitchStored")
+              : t("toastProfileSwitchIdle"),
         });
       })
       .catch((err) => setError(toMessage(err)))
@@ -358,7 +363,7 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
 
   function onSaveProfile() {
     if (!isValidSpotifyClientId(clientId)) {
-      setError("Colle un Client ID Spotify valide (32 caractères hex) avant de sauvegarder.");
+      setError(t("invalidClientIdSave"));
       return;
     }
     const saved = rememberProfile(profileName || "Spotify", clientId);
@@ -366,8 +371,8 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
     void activateSpotifyProfile(saved.id).catch(() => undefined);
     fx.toast({
       kind: "ok",
-      title: "Profil enregistré",
-      body: `${saved.name} · session & dictionnaire séparés des autres profils.`,
+      title: t("toastProfileSaved"),
+      body: t("toastProfileSavedBody", { name: saved.name }),
     });
   }
 
@@ -387,19 +392,19 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
     notifyProfilesChanged();
     fx.toast({
       kind: "hint",
-      title: "Profil supprimé",
-      body: next.length ? "Un autre profil est sélectionné." : "Aucun profil restant.",
+      title: t("toastProfileDeleted"),
+      body: next.length ? t("toastProfileDeletedOther") : t("toastProfileDeletedNone"),
     });
   }
 
   async function connect() {
     setError(null);
     if (!isValidSpotifyClientId(clientId)) {
-      setError("Client ID Spotify invalide (attendu : 32 caractères hexadécimaux).");
+      setError(t("invalidClientId"));
       fx.toast({
         kind: "warn",
-        title: "Client ID invalide",
-        body: "Colle l’ID depuis le dashboard développeur Spotify.",
+        title: t("toastInvalidClientId"),
+        body: t("toastInvalidClientIdBody"),
       });
       return;
     }
@@ -424,8 +429,8 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
       kind: "go",
       title: "Spotify",
       body: alreadyHasDictionary
-        ? "Reprise de session — ton dictionnaire existant sera conservé."
-        : "Reprise de session si déjà liée — sinon autorise BassOrder dans le navigateur.",
+        ? t("toastConnectingKeep")
+        : t("toastConnectingAuth"),
     });
     try {
       const next = await spotifyConnect(clientId);
@@ -448,16 +453,16 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
         persistKnowledge(next);
         fx.toast({
           kind: "ok",
-          title: next.knowledge.displayName ?? "Spotify lié",
-          body: `Session OK · ${next.knowledge.likedCount || saved.likedCount || 0} likes déjà en dictionnaire. Pas de nouvel import — utilise « Mettre à jour » si tu veux rescanner.`,
+          title: next.knowledge.displayName ?? t("toastLinkedFallback"),
+          body: t("toastLinkedKeep", { count: next.knowledge.likedCount || saved.likedCount || 0 }),
         });
         return;
       }
 
       fx.toast({
         kind: "ok",
-        title: next.knowledge.displayName ?? "Spotify lié",
-        body: "Première connexion — je récupère tes likes pour construire la base.",
+        title: next.knowledge.displayName ?? t("toastLinkedFallback"),
+        body: t("toastFirstImport"),
       });
       setBusy("sync");
       setActivityStartedAt(Date.now());
@@ -467,8 +472,11 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
       maybeOfferAvatar(synced.avatarUrl ?? next.avatarUrl);
       fx.toast({
         kind: "ok",
-        title: "Dictionnaire prêt",
-        body: `${synced.knowledge.likedCount} likes · ${synced.knowledge.classifiedArtists} artistes classés. Va dans Mes fichiers → Actualiser l’analyse pour en profiter.`,
+        title: t("toastDictReady"),
+        body: t("toastDictReadyBody", {
+          likes: synced.knowledge.likedCount,
+          classified: synced.knowledge.classifiedArtists,
+        }),
       });
     } catch (err) {
       setError(toMessage(err));
@@ -485,8 +493,8 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
     setBusy("sync");
     fx.toast({
       kind: "go",
-      title: "Import des likes",
-      body: "Ça peut prendre un moment — la progression s’affiche ici.",
+      title: t("toastImportLikes"),
+      body: t("toastImportLikesBody"),
     });
     try {
       const next = await spotifySyncLikes();
@@ -494,8 +502,12 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
       persistKnowledge(next);
       fx.toast({
         kind: "ok",
-        title: "Likes importés",
-        body: `${next.knowledge.likedCount} titres · ${next.knowledge.classifiedArtists}/${next.knowledge.artistCount} artistes classés.`,
+        title: t("toastLikesImported"),
+        body: t("toastLikesImportedBody", {
+          likes: next.knowledge.likedCount,
+          classified: next.knowledge.classifiedArtists,
+          artists: next.knowledge.artistCount,
+        }),
       });
     } catch (err) {
       setError(toMessage(err));
@@ -511,14 +523,14 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
       phase: "enrich",
       done: 0,
       total: 1,
-      label: "Préparation — on repère les artistes sans genre…",
+      label: t("toastEnrichPrep"),
     });
     setActivityStartedAt(Date.now());
     setBusy("enrich");
     fx.toast({
       kind: "go",
-      title: "Enrichissement lancé",
-      body: "3 étapes : Spotify, artistes liés, puis iTunes/Deezer. Tu peux laisser tourner.",
+      title: t("toastEnrichStarted"),
+      body: t("toastEnrichStartedBody"),
     });
     try {
       const next = await spotifyEnrichKnowledge();
@@ -526,14 +538,17 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
       persistKnowledge(next);
       fx.toast({
         kind: "ok",
-        title: "Dictionnaire enrichi",
-        body: `${next.knowledge.classifiedArtists}/${next.knowledge.artistCount} artistes avec un dossier. Actualise ensuite l’analyse de Mes fichiers.`,
+        title: t("toastEnrichDone"),
+        body: t("toastEnrichDoneBody", {
+          classified: next.knowledge.classifiedArtists,
+          artists: next.knowledge.artistCount,
+        }),
       });
     } catch (err) {
       setError(toMessage(err));
       fx.toast({
         kind: "warn",
-        title: "Enrichissement interrompu",
+        title: t("toastEnrichInterrupted"),
         body: toMessage(err),
       });
     } finally {
@@ -549,8 +564,8 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
       setStatus(next);
       fx.toast({
         kind: "hint",
-        title: "Spotify déconnecté",
-        body: "La base de savoir reste sur le PC tant que tu ne la reconstruis pas.",
+        title: t("toastDisconnected"),
+        body: t("toastDisconnectedBody"),
       });
     } catch (err) {
       setError(toMessage(err));
@@ -569,15 +584,11 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
     <section className="local-stage spotify-stage">
       <div className="local-topbar">
         <div className="local-topbar-copy">
-          <p className="eyebrow">Compte cloud</p>
+          <p className="eyebrow">{t("eyebrow")}</p>
           <h2>
-            <ScrambleText text="Spotify" as="span" />
+            <ScrambleText text={t("title")} as="span" />
           </h2>
-          <p className="local-lede">
-            Importe tes titres likés pour construire un dictionnaire
-            artiste → genre. Ensuite, le module « Mes fichiers » s’en sert pour
-            classer tes MP3.
-          </p>
+          <p className="local-lede">{t("lede")}</p>
         </div>
         <div className="local-toolbar">
           {status?.connected && (
@@ -588,10 +599,8 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
                 onClick={() => void enrich()}
                 disabled={busy !== null}
               >
-                {busy === "enrich" ? "Complément en cours…" : "Compléter les genres manquants"}
-                <TipPanel side="bottom">
-                  Complète les genres manquants via Spotify, iTunes et Deezer. N’écrit rien sur ta bibliothèque locale.
-                </TipPanel>
+                {busy === "enrich" ? t("completingGenres") : t("completeGenres")}
+                <TipPanel side="bottom">{t("completeTip")}</TipPanel>
               </button>
               <button
                 type="button"
@@ -599,10 +608,8 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
                 onClick={() => void sync()}
                 disabled={busy !== null}
               >
-                {busy === "sync" ? "Mise à jour…" : "Mettre à jour depuis Spotify"}
-                <TipPanel side="bottom">
-                  Retélécharge ta liste de likes depuis Spotify pour mettre à jour le dictionnaire
-                </TipPanel>
+                {busy === "sync" ? t("updating") : t("updateFromSpotify")}
+                <TipPanel side="bottom">{t("updateTip")}</TipPanel>
               </button>
               <button
                 type="button"
@@ -610,10 +617,8 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
                 onClick={() => void disconnect()}
                 disabled={busy !== null}
               >
-                Déconnecter le compte
-                <TipPanel side="bottom">
-                  Déconnecte Spotify (la base déjà apprise reste sur le PC)
-                </TipPanel>
+                {t("disconnect")}
+                <TipPanel side="bottom">{t("disconnectTip")}</TipPanel>
               </button>
             </>
           )}
@@ -622,16 +627,13 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
 
       {error && (
         <div className="local-error spotify-error">
-          <strong>Import bloqué</strong>
+          <strong>{t("importBlocked")}</strong>
           <p>{error}</p>
         </div>
       )}
 
       {!tauri && (
-        <p className="local-hint">
-          Pour lier Spotify, ouvre BassOrder en application bureau (
-          <code>pnpm tauri dev</code>), pas seulement dans le navigateur.
-        </p>
+        <p className="local-hint">{t("needDesktopHint")}</p>
       )}
 
       {tauri && status && !status.connected && (
@@ -641,53 +643,35 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
           (activeProfile?.likedCount ?? 0) > 0 ||
           status.knowledge.likedCount > 0 ? (
             <>
-              <p className="eyebrow">Session Spotify</p>
-              <h3>Compte déjà connu — ravive la connexion</h3>
+              <p className="eyebrow">{t("sessionEyebrow")}</p>
+              <h3>{t("sessionKnownTitle")}</h3>
               <p>
-                Le dictionnaire (
-                {status.knowledge.likedCount || activeProfile?.likedCount || 0} likes) est
-                bien conservé. Clique sur connecter pour reprendre la session — souvent
-                sans re-login Spotify.
+                {t("sessionKnownBody", {
+                  count: status.knowledge.likedCount || activeProfile?.likedCount || 0,
+                })}
               </p>
             </>
           ) : (
             <>
-              <p className="eyebrow">Étape 1 — connexion</p>
-              <h3>Tes likes Spotify deviennent un dictionnaire</h3>
-              <p>
-                Chaque compte Spotify (Perso, DJ…) a sa propre connexion et son propre
-                dictionnaire — le tout reste dans <em>ton</em> profil utilisateur.
-                Cherche partout avec Ctrl+K.
-              </p>
+              <p className="eyebrow">{t("step1Eyebrow")}</p>
+              <h3>{t("step1Title")}</h3>
+              <p>{t("step1Body")}</p>
               <ol className="spotify-steps">
-                <li>
-                  Crée une application gratuite sur{" "}
-                  <strong>developer.spotify.com/dashboard</strong>
-                </li>
-                <li>
-                  Dans l’app Spotify, ajoute ces Redirect URI :{" "}
-                  <code>http://127.0.0.1:41821/callback</code> et{" "}
-                  <code>http://127.0.0.1:41822/callback</code>
-                </li>
-                <li>
-                  Dans User Management, ajoute ton compte Spotify (celui qui like
-                  les titres)
-                </li>
-                <li>
-                  Colle le Client ID ci-dessous, clique sur connecter, autorise dans
-                  le navigateur — l’import des likes démarre ensuite tout seul
-                </li>
+                <li>{t("stepCreateApp")}</li>
+                <li>{t("stepRedirect")}</li>
+                <li>{t("stepUserMgmt")}</li>
+                <li>{t("stepClientId")}</li>
               </ol>
             </>
           )}
           <div className="spotify-profiles">
             <label className="spotify-client">
-              <span>Profils sauvegardés</span>
+              <span>{t("savedProfiles")}</span>
               <select
                 value={activeProfileId}
                 onChange={(e) => onPickProfile(e.target.value)}
               >
-                <option value="">Nouveau / libre</option>
+                <option value="">{t("newFree")}</option>
                 {profiles.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name} · {maskId(p.clientId)}
@@ -696,17 +680,17 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
               </select>
             </label>
             <label className="spotify-client">
-              <span>Nom du profil</span>
+              <span>{t("profileName")}</span>
               <input
                 type="text"
                 value={profileName}
                 autoComplete="off"
-                placeholder="Ex. Perso, DJ, Colloc…"
+                placeholder={t("profileNamePlaceholder")}
                 onChange={(e) => setProfileName(e.target.value)}
               />
             </label>
             <label className="spotify-client">
-              <span>Client ID</span>
+              <span>{t("clientId")}</span>
               <input
                 type="text"
                 value={clientId}
@@ -725,18 +709,18 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
                 className="btn-ghost"
                 onClick={onSaveProfile}
                 disabled={!isValidSpotifyClientId(clientId)}
-                title="Enregistre ce Client ID sous un nom (Perso, DJ…) pour le retrouver plus tard"
+                title={t("saveProfileTitle")}
               >
-                Enregistrer ce profil
+                {t("saveProfile")}
               </button>
               <button
                 type="button"
                 className="btn-ghost"
                 onClick={onDeleteProfile}
                 disabled={!activeProfileId}
-                title="Supprime ce profil de BassOrder (pas ton compte Spotify)"
+                title={t("deleteProfileTitle")}
               >
-                Supprimer ce profil
+                {t("deleteProfile")}
               </button>
             </div>
           </div>
@@ -745,15 +729,15 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
             className="btn-accent"
             onClick={() => void connect()}
             disabled={busy !== null || !isValidSpotifyClientId(clientId)}
-            title="Reprend la session Spotify (refresh) ou ouvre le navigateur si besoin"
+            title={t("connectTitle")}
           >
             {busy === "connect"
-              ? "Reprise de session…"
+              ? t("connectResuming")
               : busy === "sync"
-                ? "Import des titres likés…"
+                ? t("connectImporting")
                 : status.hasStoredAuth || (activeProfile?.likedCount ?? 0) > 0
-                  ? "Reconnecter Spotify"
-                  : "Connecter Spotify et importer mes likes"}
+                  ? t("connectResume")
+                  : t("connectImport")}
           </button>
         </div>
       )}
@@ -769,7 +753,7 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
       {status?.connected && busy !== "sync" && busy !== "enrich" && (
         <>
           {avatarOfferUrl && user && (
-            <div className="spotify-avatar-offer fx-frame fx-frame--mid" role="dialog" aria-label="Photo de profil">
+            <div className="spotify-avatar-offer fx-frame fx-frame--mid" role="dialog" aria-label={t("avatarOfferAria")}>
               <span className="spin-border" aria-hidden />
               <img
                 className="spotify-avatar-offer-photo"
@@ -777,10 +761,8 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
                 alt=""
               />
               <div className="spotify-avatar-offer-copy">
-                <h3>Utiliser ta photo Spotify ?</h3>
-                <p>
-                  Elle remplacera ton monogramme dans le rail et sur ton profil BassOrder.
-                </p>
+                <h3>{t("avatarOfferTitle")}</h3>
+                <p>{t("avatarOfferBody")}</p>
                 <div className="spotify-avatar-offer-actions">
                   <button
                     type="button"
@@ -791,13 +773,13 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
                         setAvatarOfferUrl(null);
                         fx.toast({
                           kind: "ok",
-                          title: "Photo de profil",
-                          body: "Ta PP Spotify est maintenant ton avatar.",
+                          title: t("toastAvatar"),
+                          body: t("toastAvatarBody"),
                         });
                       });
                     }}
                   >
-                    Oui, l’utiliser
+                    {t("avatarYes")}
                   </button>
                   <button
                     type="button"
@@ -807,7 +789,7 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
                       setAvatarOfferUrl(null);
                     }}
                   >
-                    Plus tard
+                    {t("avatarLater")}
                   </button>
                 </div>
               </div>
@@ -824,14 +806,14 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
             )}
             <span>
               {activeProfile?.name ? `${activeProfile.name} · ` : ""}
-              {status.knowledge.displayName ?? "Compte Spotify"}
+              {status.knowledge.displayName ?? tc("spotifyAccount")}
               {status.knowledge.syncedAt
-                ? ` · dernière mise à jour ${formatSync(status.knowledge.syncedAt)}`
-                : " · pas encore importé"}
+                ? t("identityLastUpdate", { when: formatSync(status.knowledge.syncedAt, loc) })
+                : t("identityNotImported")}
             </span>
           </p>
 
-          <div className="kpi-grid" aria-label="Résumé du dictionnaire">
+          <div className="kpi-grid" aria-label={t("kpiAria")}>
             <div
               className={`kpi kpi-hero fx-frame fx-frame--loud${coverage >= 70 ? " is-accent" : ""}`}
             >
@@ -841,30 +823,21 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
                 <span className="kpi-value">
                   <CountUp value={coverage} suffix="%" />
                 </span>
-                <span className="kpi-label">Artistes avec un genre</span>
+                <span className="kpi-label">{t("kpiArtistsWithGenre")}</span>
                 <span className="kpi-hint">
-                  {classified} sur {artists || "—"} dans le dictionnaire
+                  {t("kpiArtistsHint", { classified, artists: artists || "—" })}
                 </span>
               </div>
             </div>
             <SpotifyMetric
-              label="Titres likés"
+              label={t("metricLiked")}
               value={status.knowledge.likedCount}
             />
-            <SpotifyMetric label="Artistes" value={status.knowledge.artistCount} />
-            <SpotifyMetric label="Dossiers" value={groups.length} />
+            <SpotifyMetric label={t("metricArtists")} value={status.knowledge.artistCount} />
+            <SpotifyMetric label={t("metricFolders")} value={groups.length} />
           </div>
 
-          <p className="local-hint">
-            Ce n’est <strong>pas</strong> un bug de ton import : depuis 2025,
-            l’API Spotify renvoie souvent <code>genres: []</code> même pour des
-            gros artistes. Le complément multi-sources (liés + dico + iTunes /
-            Deezer + MusicBrainz) monte la couverture — chez toi on est déjà
-            bien au-dessus du vieux plafond ~37&nbsp;%. On classe des{" "}
-            <strong>artistes</strong>, pas chaque titre. Ensuite, dans{" "}
-            <strong>Mes fichiers</strong>, Actualiser puis{" "}
-            <strong>Deviner les genres</strong>.
-          </p>
+          <p className="local-hint">{t("apiNote")}</p>
 
           {live && groups.length > 0 && (
             <div className="plan-workspace">
@@ -874,7 +847,7 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
                   <input
                     type="search"
                     className="plan-search"
-                    placeholder="Filtrer un genre…"
+                    placeholder={t("filterGenrePlaceholder")}
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                   />
@@ -898,7 +871,7 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
                         <span className="folder-count">{group.artistCount}</span>
                       </div>
                       <div className="folder-row-meta">
-                        <span>{group.likes} likes</span>
+                        <span>{t("likesCount", { count: group.likes })}</span>
                       </div>
                     </button>
                   )}
@@ -914,6 +887,7 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
 }
 
 function GroupDetail({ group }: { group: KnowledgeGroup }) {
+  const { t } = useTranslation("spotify");
   const [artists, setArtists] = useState<string[]>(group.artists);
   const [loadingArtists, setLoadingArtists] = useState(group.artists.length === 0);
 
@@ -951,13 +925,13 @@ function GroupDetail({ group }: { group: KnowledgeGroup }) {
       <span className="spin-border" aria-hidden />
       <header className="plan-detail-header">
         <div>
-          <p className="plan-detail-kicker">Dossier</p>
+          <p className="plan-detail-kicker">{t("detailFolder")}</p>
           <h4>{group.genre}</h4>
           <p className="plan-detail-path">{group.folder}</p>
         </div>
         <div className="plan-detail-stats">
           <strong>{group.artistCount}</strong>
-          <span>artistes</span>
+          <span>{t("detailArtists")}</span>
         </div>
       </header>
       {loadingArtists ? (
@@ -968,7 +942,7 @@ function GroupDetail({ group }: { group: KnowledgeGroup }) {
             <li key={name}>{name}</li>
           ))}
           {artists.length === 0 && (
-            <li className="is-empty">Aucun artiste listé pour ce dossier.</li>
+            <li className="is-empty">{t("noArtistsListed")}</li>
           )}
         </ul>
       )}
@@ -988,12 +962,12 @@ function SpotifyMetric({ label, value }: { label: string; value: number }) {
   );
 }
 
-function formatSync(raw: string): string {
+function formatSync(raw: string, loc: "en-US" | "fr-FR" = "fr-FR"): string {
   const n = Number(raw);
   if (!Number.isFinite(n) || n < 1_000_000_000) {
     return raw;
   }
-  return new Date(n * 1000).toLocaleString("fr-FR", {
+  return new Date(n * 1000).toLocaleString(loc, {
     dateStyle: "short",
     timeStyle: "short",
   });

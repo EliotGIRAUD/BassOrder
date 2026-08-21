@@ -7,6 +7,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import i18n, {
+  detectBrowserLocale,
+  type AppLocale,
+} from "../i18n";
 import { dbGetPrefs, dbSetPrefs, isTauri } from "../db";
 import { setPreviewVolume } from "../local/player";
 import { getActiveUserId, readUserItem, writeUserItem } from "../users/storage";
@@ -31,6 +35,8 @@ export type Prefs = {
   musicVolume: number;
   toastMs: number;
   intensity: number;
+  /** UI language — detected once, then user-controlled. */
+  locale: AppLocale;
 };
 
 export const DEFAULT_PREFS: Prefs = {
@@ -48,7 +54,25 @@ export const DEFAULT_PREFS: Prefs = {
   musicVolume: 0.8,
   toastMs: 12000,
   intensity: 1,
+  locale: "en",
 };
+
+function normalizeLocale(value: unknown): AppLocale | null {
+  if (value === "en" || value === "fr") {
+    return value;
+  }
+  return null;
+}
+
+function resolveLocale(parsed: Partial<Prefs>): AppLocale {
+  return normalizeLocale(parsed.locale) ?? detectBrowserLocale();
+}
+
+function syncI18nLocale(locale: AppLocale): void {
+  if (i18n.language !== locale) {
+    void i18n.changeLanguage(locale);
+  }
+}
 
 type PrefsApi = {
   prefs: Prefs;
@@ -131,9 +155,11 @@ function readPrefs(): Prefs {
     }
     const parsed = JSON.parse(raw) as Partial<Prefs>;
     const oledMigrated = readUserItem(OLED_SUFFIX) === "1";
+    const locale = resolveLocale(parsed);
     const prefs: Prefs = {
       ...DEFAULT_PREFS,
       ...parsed,
+      locale,
       background: oledMigrated ? Boolean(parsed.background) : false,
       volume: clamp(Number(parsed.volume ?? DEFAULT_PREFS.volume), 0, 1),
       musicVolume: clamp(Number(parsed.musicVolume ?? DEFAULT_PREFS.musicVolume), 0, 1),
@@ -142,8 +168,12 @@ function readPrefs(): Prefs {
         ? Number(parsed.toastMs)
         : DEFAULT_PREFS.toastMs,
     };
-    if (!oledMigrated) {
-      writeUserItem(OLED_SUFFIX, "1");
+    const needsPersist =
+      !oledMigrated || normalizeLocale(parsed.locale) == null;
+    if (needsPersist) {
+      if (!oledMigrated) {
+        writeUserItem(OLED_SUFFIX, "1");
+      }
       writePrefs(prefs);
     }
     return prefs;
@@ -174,9 +204,19 @@ async function loadPrefsFromDb(userId: string): Promise<Prefs | null> {
     if (!map || Object.keys(map).length === 0) return null;
     // Prefer bundled object if stored as single key
     if (map.bundle && typeof map.bundle === "object") {
-      return { ...DEFAULT_PREFS, ...(map.bundle as Partial<Prefs>) };
+      const partial = map.bundle as Partial<Prefs>;
+      return {
+        ...DEFAULT_PREFS,
+        ...partial,
+        locale: resolveLocale(partial),
+      };
     }
-    return { ...DEFAULT_PREFS, ...(map as Partial<Prefs>) };
+    const partial = map as Partial<Prefs>;
+    return {
+      ...DEFAULT_PREFS,
+      ...partial,
+      locale: resolveLocale(partial),
+    };
   } catch {
     return null;
   }
@@ -194,8 +234,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [prefs, setPrefs] = useState<Prefs>(() => {
     const initial = readPrefs();
     applyPrefs(initial);
+    syncI18nLocale(initial.locale);
     return initial;
   });
+
+  useEffect(() => {
+    syncI18nLocale(prefs.locale);
+  }, [prefs.locale]);
 
   useEffect(() => {
     let cancelled = false;
@@ -203,9 +248,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       if (user?.id && isTauri()) {
         const fromDb = await loadPrefsFromDb(user.id);
         if (!cancelled && fromDb) {
-          const next = {
+          const next: Prefs = {
             ...DEFAULT_PREFS,
             ...fromDb,
+            locale: resolveLocale(fromDb),
             volume: clamp(Number(fromDb.volume ?? DEFAULT_PREFS.volume), 0, 1),
             musicVolume: clamp(
               Number(fromDb.musicVolume ?? DEFAULT_PREFS.musicVolume),
@@ -222,6 +268,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
               : DEFAULT_PREFS.toastMs,
           };
           applyPrefs(next);
+          syncI18nLocale(next.locale);
           setPrefs(next);
           return;
         }
@@ -229,6 +276,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       if (!cancelled) {
         const next = readPrefs();
         applyPrefs(next);
+        syncI18nLocale(next.locale);
         setPrefs(next);
       }
     })();
@@ -242,20 +290,33 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       const next = { ...prev, ...partial };
       writePrefs(next);
       applyPrefs(next);
+      if (partial.locale) {
+        syncI18nLocale(next.locale);
+      }
       return next;
     });
   }, []);
 
   const reset = useCallback(() => {
-    writePrefs(DEFAULT_PREFS);
-    applyPrefs(DEFAULT_PREFS);
-    setPrefs(DEFAULT_PREFS);
+    const next: Prefs = {
+      ...DEFAULT_PREFS,
+      locale: detectBrowserLocale(),
+    };
+    writePrefs(next);
+    applyPrefs(next);
+    syncI18nLocale(next.locale);
+    setPrefs(next);
   }, []);
 
   const replace = useCallback((next: Prefs) => {
-    const merged: Prefs = { ...DEFAULT_PREFS, ...next };
+    const merged: Prefs = {
+      ...DEFAULT_PREFS,
+      ...next,
+      locale: resolveLocale(next),
+    };
     writePrefs(merged);
     applyPrefs(merged);
+    syncI18nLocale(merged.locale);
     setPrefs(merged);
   }, []);
 

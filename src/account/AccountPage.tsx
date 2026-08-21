@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
+import { intlLocale, type AppLocale } from "../i18n";
 import { DEFAULT_PREFS, usePrefs } from "../ui/prefs";
 import { useExperience } from "../ui/Experience";
 import { LiveAvatar } from "../users/LiveAvatar";
@@ -33,6 +35,8 @@ import {
 import { syncKnowledgeCloud } from "../knowledge/api";
 
 export function AccountPage() {
+  const { t, i18n } = useTranslation("account");
+  const loc = intlLocale((i18n.language.startsWith("fr") ? "fr" : "en") as AppLocale);
   const { user } = useUserSession();
   const { prefs, replace } = usePrefs();
   const fx = useExperience();
@@ -101,7 +105,7 @@ export function AccountPage() {
       setBusy(false);
       fx.toast({
         kind: "warn",
-        title: "URL API refusée",
+        title: t("toastBadApiUrl"),
         body: err instanceof Error ? err.message : String(err),
       });
       return;
@@ -124,14 +128,14 @@ export function AccountPage() {
       setPassword("");
       fx.toast({
         kind: "ok",
-        title: mode === "register" ? "Compte créé" : "Connecté",
+        title: mode === "register" ? t("toastAccountCreated") : t("toastConnected"),
         body: tokens.email,
       });
       await reload();
     } catch (err) {
       fx.toast({
         kind: "warn",
-        title: "Cloud indisponible",
+        title: t("toastCloudUnavailable"),
         body: err instanceof Error ? err.message : String(err),
       });
     } finally {
@@ -149,7 +153,11 @@ export function AccountPage() {
         await clearCloudLink(user.id);
       }
       setLink(null);
-      fx.toast({ kind: "ok", title: "Déconnecté du cloud", body: "Profil local intact." });
+      fx.toast({
+        kind: "ok",
+        title: t("toastCloudDisconnected"),
+        body: t("toastCloudDisconnectedBody"),
+      });
     } finally {
       setBusy(false);
     }
@@ -163,17 +171,21 @@ export function AccountPage() {
       await reload();
       const filled =
         result.filled > 0
-          ? ` · ${result.filled} genre${result.filled > 1 ? "s" : ""} comblé${result.filled > 1 ? "s" : ""} via le pool`
+          ? t("toastFilled", { count: result.filled })
           : "";
       fx.toast({
         kind: "ok",
-        title: "Knowledge synchronisée",
-        body: `${result.pushed} artiste${result.pushed > 1 ? "s" : ""} poussé${result.pushed > 1 ? "s" : ""} vers le cloud${filled}.`,
+        title: t("toastKnowledgeSynced"),
+        body: t("toastKnowledgeSyncedBody", {
+          count: result.pushed,
+          pushed: result.pushed,
+          filled,
+        }),
       });
     } catch (err) {
       fx.toast({
         kind: "warn",
-        title: "Sync knowledge",
+        title: t("toastSyncKnowledge"),
         body: err instanceof Error ? err.message : String(err),
       });
     } finally {
@@ -196,13 +208,13 @@ export function AccountPage() {
       setLocalPinCurrent("");
       fx.toast({
         kind: "ok",
-        title: "Verrou local activé",
-        body: "PIN / mot de passe enregistré (Argon2).",
+        title: t("toastLockOn"),
+        body: t("toastLockOnBody"),
       });
     } catch (err) {
       fx.toast({
         kind: "warn",
-        title: "Impossible",
+        title: t("toastImpossible"),
         body: err instanceof Error ? err.message : String(err),
       });
     } finally {
@@ -217,11 +229,15 @@ export function AccountPage() {
       await localAuthClearPassword(user.id, localPinCurrent);
       setHasLocalPw(false);
       setLocalPinCurrent("");
-      fx.toast({ kind: "ok", title: "Verrou retiré", body: "Profil sans PIN." });
+      fx.toast({
+        kind: "ok",
+        title: t("toastLockOff"),
+        body: t("toastLockOffBody"),
+      });
     } catch (err) {
       fx.toast({
         kind: "warn",
-        title: "Mot de passe incorrect",
+        title: t("toastWrongPassword"),
         body: err instanceof Error ? err.message : String(err),
       });
     } finally {
@@ -231,12 +247,13 @@ export function AccountPage() {
 
   async function onSavePreset() {
     if (!user) return;
-    const name = `Réglages ${new Date().toLocaleString("fr-FR", {
+    const when = new Date().toLocaleString(loc, {
       day: "2-digit",
       month: "short",
       hour: "2-digit",
       minute: "2-digit",
-    })}`;
+    });
+    const name = t("presetName", { when });
     await upsertAccountPreset({
       userId: user.id,
       name,
@@ -245,16 +262,20 @@ export function AccountPage() {
     await reload();
     fx.toast({
       kind: "ok",
-      title: "Preset sauvegardé",
-      body: "Tu pourras le réappliquer depuis cette liste.",
+      title: t("toastPresetSaved"),
+      body: t("toastPresetSavedBody"),
     });
   }
 
   async function onApplyPreset(preset: AccountPreset) {
-    replace({ ...DEFAULT_PREFS, ...(preset.prefs as Partial<typeof DEFAULT_PREFS>) });
+    replace({
+      ...DEFAULT_PREFS,
+      ...(preset.prefs as Partial<typeof DEFAULT_PREFS>),
+      locale: prefs.locale,
+    });
     fx.toast({
       kind: "ok",
-      title: "Preset appliqué",
+      title: t("toastPresetApplied"),
       body: preset.name,
     });
   }
@@ -262,7 +283,11 @@ export function AccountPage() {
   async function onRemovePreset(id: string) {
     await deleteAccountPreset(id);
     setPresets((prev) => prev.filter((p) => p.id !== id));
-    fx.toast({ kind: "hint", title: "Preset retiré", body: "Les réglages actuels restent en place." });
+    fx.toast({
+      kind: "hint",
+      title: t("toastPresetRemoved"),
+      body: t("toastPresetRemovedBody"),
+    });
   }
 
   async function onRemoveFavorite(id: string) {
@@ -275,12 +300,9 @@ export function AccountPage() {
   return (
     <div className="account-page">
       <header className="account-hero">
-        <p className="eyebrow">Compte BassOrder</p>
-        <h1>Identité & cloud</h1>
-        <p className="account-lede">
-          Profil local sécurisé, connexion cloud optionnelle, et presets de
-          réglages d’interface.
-        </p>
+        <p className="eyebrow">{t("eyebrow")}</p>
+        <h1>{t("title")}</h1>
+        <p className="account-lede">{t("lede")}</p>
       </header>
 
       <section className="account-identity">
@@ -292,17 +314,17 @@ export function AccountPage() {
         />
         <div>
           <strong>{user.name}</strong>
-          <em>Profil local actif</em>
+          <em>{t("localActive")}</em>
         </div>
       </section>
 
       <div className="account-grid">
         <section className="account-block">
-          <h2>Cloud</h2>
+          <h2>{t("cloud")}</h2>
           <p className="account-hint">
             API{" "}
             <span className={apiOk === true ? "is-ok" : apiOk === false ? "is-bad" : ""}>
-              {apiOk === true ? "en ligne" : apiOk === false ? "hors ligne" : "…"}
+              {apiOk === true ? t("apiOnline") : apiOk === false ? t("apiOffline") : "…"}
             </span>
             {" · "}
             {getApiBase()}
@@ -311,20 +333,23 @@ export function AccountPage() {
           {connected ? (
             <div className="account-cloud-on">
               <p>
-                Connecté en tant que <strong>{link?.email ?? "compte"}</strong>
+                {t("connectedAs", {
+                  email: link?.email ?? t("accountFallback"),
+                })}
               </p>
               {link?.lastSyncAt ? (
                 <p className="account-hint">
-                  Dernière sync knowledge :{" "}
-                  {new Date(link.lastSyncAt).toLocaleString("fr-FR", {
-                    day: "2-digit",
-                    month: "short",
-                    hour: "2-digit",
-                    minute: "2-digit",
+                  {t("lastKnowledgeSync", {
+                    when: new Date(link.lastSyncAt).toLocaleString(loc, {
+                      day: "2-digit",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }),
                   })}
                 </p>
               ) : (
-                <p className="account-hint">Knowledge cloud pas encore synchronisée.</p>
+                <p className="account-hint">{t("knowledgeNotSynced")}</p>
               )}
               <div className="account-cloud-actions">
                 <button
@@ -333,7 +358,7 @@ export function AccountPage() {
                   disabled={busy}
                   onClick={() => void onSyncKnowledge()}
                 >
-                  Sync knowledge
+                  {t("syncKnowledge")}
                 </button>
                 <button
                   type="button"
@@ -341,7 +366,7 @@ export function AccountPage() {
                   disabled={busy}
                   onClick={() => void onCloudDisconnect()}
                 >
-                  Déconnecter le cloud
+                  {t("disconnectCloud")}
                 </button>
               </div>
             </div>
@@ -353,18 +378,18 @@ export function AccountPage() {
                   className={mode === "login" ? "is-on" : undefined}
                   onClick={() => setMode("login")}
                 >
-                  Connexion
+                  {t("login")}
                 </button>
                 <button
                   type="button"
                   className={mode === "register" ? "is-on" : undefined}
                   onClick={() => setMode("register")}
                 >
-                  Créer un compte
+                  {t("register")}
                 </button>
               </div>
               <label>
-                <span>URL API</span>
+                <span>{t("apiUrl")}</span>
                 <input
                   value={apiUrl}
                   onChange={(e) => setApiUrl(e.target.value)}
@@ -373,7 +398,7 @@ export function AccountPage() {
                 />
               </label>
               <label>
-                <span>Email</span>
+                <span>{t("email")}</span>
                 <input
                   type="email"
                   value={email}
@@ -383,7 +408,7 @@ export function AccountPage() {
                 />
               </label>
               <label>
-                <span>Mot de passe</span>
+                <span>{t("password")}</span>
                 <input
                   type="password"
                   value={password}
@@ -394,7 +419,7 @@ export function AccountPage() {
                 />
               </label>
               <button type="submit" className="btn-primary" disabled={busy}>
-                {mode === "register" ? "Créer & lier" : "Se connecter"}
+                {mode === "register" ? t("createAndLink") : t("signIn")}
               </button>
               <div className="account-oauth">
                 <a
@@ -419,16 +444,14 @@ export function AccountPage() {
         </section>
 
         <section className="account-block">
-          <h2>Verrou local</h2>
+          <h2>{t("localLock")}</h2>
           <p className="account-hint">
-            {hasLocalPw
-              ? "PIN / mot de passe actif (Argon2id)."
-              : "Optionnel — protège ce profil sur la machine."}
+            {hasLocalPw ? t("localLockOn") : t("localLockOff")}
           </p>
           <form className="account-form" onSubmit={(e) => void onSetLocalPin(e)}>
             {hasLocalPw && (
               <label>
-                <span>Actuel</span>
+                <span>{t("current")}</span>
                 <input
                   type="password"
                   value={localPinCurrent}
@@ -438,7 +461,7 @@ export function AccountPage() {
               </label>
             )}
             <label>
-              <span>{hasLocalPw ? "Nouveau" : "PIN / mot de passe"}</span>
+              <span>{hasLocalPw ? t("newPin") : t("pinPassword")}</span>
               <input
                 type="password"
                 value={localPin}
@@ -448,7 +471,7 @@ export function AccountPage() {
               />
             </label>
             <button type="submit" className="btn-primary" disabled={busy || localPin.length < 6}>
-              {hasLocalPw ? "Mettre à jour" : "Activer"}
+              {hasLocalPw ? t("update") : t("activate")}
             </button>
             {hasLocalPw && (
               <button
@@ -457,7 +480,7 @@ export function AccountPage() {
                 disabled={busy || !localPinCurrent}
                 onClick={() => void onClearLocalPin()}
               >
-                Retirer le verrou
+                {t("removeLock")}
               </button>
             )}
           </form>
@@ -466,38 +489,33 @@ export function AccountPage() {
 
       <section className="account-block account-block--wide">
         <div className="account-block-head">
-          <h2>Presets de réglages</h2>
+          <h2>{t("presetsTitle")}</h2>
           <button type="button" className="btn-accent" onClick={() => void onSavePreset()}>
-            Sauver mes réglages
+            {t("saveSettings")}
           </button>
         </div>
-        <p className="account-hint">
-          Snapshot des préférences d’interface (effets, volume, sons…). Applique
-          un preset pour retrouver exactement la même config.
-        </p>
+        <p className="account-hint">{t("presetsHint")}</p>
         {presets.length === 0 && favorites.length === 0 ? (
-          <p className="account-empty">
-            Aucun preset pour l’instant — clique « Sauver mes réglages ».
-          </p>
+          <p className="account-empty">{t("presetsEmpty")}</p>
         ) : (
           <ul className="account-fav-list">
             {presets.map((p) => (
               <li key={p.id}>
-                <span className="account-fav-kind">preset</span>
+                <span className="account-fav-kind">{t("presetKind")}</span>
                 <strong>{p.name}</strong>
                 <button
                   type="button"
                   className="btn-primary"
                   onClick={() => void onApplyPreset(p)}
                 >
-                  Appliquer
+                  {t("apply")}
                 </button>
                 <button
                   type="button"
                   className="btn-ghost"
                   onClick={() => void onRemovePreset(p.id)}
                 >
-                  Retirer
+                  {t("remove")}
                 </button>
               </li>
             ))}
@@ -510,7 +528,7 @@ export function AccountPage() {
                   className="btn-ghost"
                   onClick={() => void onRemoveFavorite(f.id)}
                 >
-                  Retirer
+                  {t("remove")}
                 </button>
               </li>
             ))}

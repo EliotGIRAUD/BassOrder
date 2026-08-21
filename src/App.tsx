@@ -1,4 +1,5 @@
 import { startTransition, useCallback, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import "./App.css";
 import { HistoryPage } from "./history/HistoryPage";
 import { KnowledgePage } from "./knowledge/KnowledgePage";
@@ -35,6 +36,8 @@ type View =
   | "account";
 
 function App() {
+  const { t } = useTranslation("nav");
+  const { t: tc } = useTranslation("common");
   const [view, setView] = useState<View>("home");
   /** Garde Local/Spotify montés après 1re visite (jobs longs en fond). */
   const [keepLocal, setKeepLocal] = useState(false);
@@ -63,8 +66,8 @@ function App() {
       setRailNudge((n) => n + 1);
       fx.toast({
         kind: "hint",
-        title: "D’abord ton profil",
-        body: "Choisis qui tu es au centre — la barre s’allumera ensuite.",
+        title: t("toastNeedProfileTitle"),
+        body: t("toastNeedProfileBody"),
       });
       return;
     }
@@ -102,66 +105,66 @@ function App() {
         const labels = jobs.map((job) => job.label).join(" · ");
         fx.toast({
           kind: "hint",
-          title: "Ça continue en fond",
-          body: `${labels}. Reviens quand tu veux — rien n’est annulé.`,
+          title: t("toastBgWorkTitle"),
+          body: t("toastBgWorkBody", { labels }),
         });
       } else if (next === "local") {
         const saved = listLibraries().length;
         fx.toast({
           kind: "go",
-          title: "Musique sur ton PC",
+          title: t("toastLocalTitle"),
           body:
             saved > 0
-              ? `${saved} analyse${saved > 1 ? "s" : ""} déjà en mémoire — tu peux en rouvrir une depuis Historique.`
-              : "Choisis un dossier : on lit les titres sans rien déplacer pour l’instant.",
+              ? t("toastLocalBodySaved", { count: saved })
+              : t("toastLocalBodyEmpty"),
         });
       } else if (next === "localHistory") {
         const saved = listLibraries().length;
         fx.toast({
           kind: "hint",
-          title: "Historique des analyses",
+          title: t("toastLocalHistoryTitle"),
           body:
             saved > 0
-              ? `${saved} dossier${saved > 1 ? "s" : ""} déjà analysé${saved > 1 ? "s" : ""} — clique pour reprendre.`
-              : "Ici apparaîtront tes analyses de dossiers, pour les rouvrir plus tard.",
+              ? t("toastLocalHistoryBodySaved", { count: saved })
+              : t("toastLocalHistoryBodyEmpty"),
         });
       } else if (next === "spotify") {
         const profiles = listProfiles().length;
         fx.toast({
           kind: "go",
-          title: "Compte Spotify",
+          title: t("toastSpotifyTitle"),
           body:
             profiles > 0
-              ? `${profiles} profil${profiles > 1 ? "s" : ""} enregistré${profiles > 1 ? "s" : ""} — clique une bulle sous Spotify pour basculer.`
-              : "Importe tes likes : ça devient le dictionnaire pour classer aussi tes fichiers locaux.",
+              ? t("toastSpotifyBodySaved", { count: profiles })
+              : t("toastSpotifyBodyEmpty"),
         });
       } else if (next === "spotifyHistory") {
         const saved = listImports().length;
         fx.toast({
           kind: "hint",
-          title: "Historique des imports Spotify",
+          title: t("toastSpotifyHistoryTitle"),
           body:
             saved > 0
-              ? `${saved} import${saved > 1 ? "s" : ""} mémorisé${saved > 1 ? "s" : ""} — tu peux les rouvrir.`
-              : "Chaque import de likes sera listé ici, par profil.",
+              ? t("toastSpotifyHistoryBodySaved", { count: saved })
+              : t("toastSpotifyHistoryBodyEmpty"),
         });
       } else if (next === "knowledge") {
         fx.toast({
           kind: "go",
-          title: "Dictionnaire d’artistes",
-          body: "Liste des artistes et genres appris via Spotify — utilisée aussi pour tes MP3.",
+          title: t("toastKnowledgeTitle"),
+          body: t("toastKnowledgeBody"),
         });
       } else if (next === "profile") {
         fx.toast({
           kind: "hint",
-          title: "Ton profil",
-          body: "Pseudo, couleur, stats — et un terrain orbital pour t’amuser.",
+          title: t("toastProfileTitle"),
+          body: t("toastProfileBody"),
         });
       } else {
         fx.toast({
           kind: "hint",
-          title: "BassOrder",
-          body: "En clair : importer depuis Spotify ou ton PC → proposer des genres → classer quand tu es d’accord.",
+          title: t("toastHomeTitle"),
+          body: t("toastHomeBody"),
         });
       }
     });
@@ -196,22 +199,29 @@ function App() {
           type="button"
           className="rail-logo"
           onClick={() => go("home")}
-          aria-label="BassOrder — accueil"
+          aria-label={t("homeLogoAria")}
           tabIndex={locked ? -1 : 0}
         >
           <span className="rail-logo-mark">
-            <span className="brand-pulse" />
+            <img
+              className="rail-logo-img"
+              src="/logo.svg"
+              width={42}
+              height={42}
+              alt=""
+              decoding="async"
+            />
           </span>
           <span className="rail-logo-text">
             B<span>O</span>
           </span>
         </button>
 
-        <nav className="rail-nav" aria-label="Navigation principale">
+        <nav className="rail-nav" aria-label={t("mainAria")}>
           <RailBtn
             active={!locked && view === "home"}
-            label="Accueil"
-            hint="Retour à l’écran d’accueil"
+            label={t("home")}
+            hint={t("homeHint")}
             onClick={() => go("home")}
           >
             <HomeIcon />
@@ -219,16 +229,16 @@ function App() {
           <div className="rail-group">
             <RailBtn
               active={!locked && view === "local"}
-              label="Mes fichiers"
-              hint="Analyser et classer la musique sur ton PC"
+              label={t("localFiles")}
+              hint={t("localFilesHint")}
               onClick={() => go("local")}
             >
               <FolderIcon />
             </RailBtn>
             <RailBtn
               active={!locked && view === "localHistory"}
-              label="Hist. local"
-              hint="Historique local — analyses de dossiers déjà faites, avec l’amélioration de détection"
+              label={t("localHistory")}
+              hint={t("localHistoryHint")}
               onClick={() => go("localHistory")}
               sub
             >
@@ -238,8 +248,8 @@ function App() {
           <div className="rail-group">
             <RailBtn
               active={!locked && view === "spotify"}
-              label="Spotify"
-              hint="Importer tes likes pour enrichir le dictionnaire de genres"
+              label={t("spotify")}
+              hint={t("spotifyHint")}
               onClick={() => go("spotify")}
             >
               <SpotifyIcon />
@@ -247,8 +257,8 @@ function App() {
             {!locked && <RailProfileStack onOpenSpotify={() => go("spotify")} />}
             <RailBtn
               active={!locked && view === "spotifyHistory"}
-              label="Hist. Spotify"
-              hint="Historique Spotify — imports déjà réalisés, par profil"
+              label={t("spotifyHistory")}
+              hint={t("spotifyHistoryHint")}
               onClick={() => go("spotifyHistory")}
               sub
             >
@@ -265,7 +275,7 @@ function App() {
               type="button"
               className={`rail-btn rail-user${view === "profile" ? " is-active" : ""}`}
               onClick={() => go("profile")}
-              aria-label={`Profil de ${user.name}`}
+              aria-label={t("profileAria", { name: user.name })}
             >
               <LiveAvatar
                 name={user.name}
@@ -275,12 +285,12 @@ function App() {
                 className="rail-user-avatar"
               />
               <span className="rail-btn-label">{user.name}</span>
-              <TipPanel>{`Profil BassOrder de ${user.name} — avatar & session`}</TipPanel>
+              <TipPanel>{t("profileTip", { name: user.name })}</TipPanel>
             </button>
           ) : (
             <div className="rail-btn rail-user is-ghost" aria-hidden>
               <span className="rail-user-avatar is-empty">?</span>
-              <span className="rail-btn-label">Profil</span>
+              <span className="rail-btn-label">{tc("profile")}</span>
             </div>
           )}
 
@@ -288,18 +298,18 @@ function App() {
             type="button"
             className="rail-btn"
             onClick={openSearch}
-            aria-label="Recherche globale (Ctrl+K)"
+            aria-label={t("searchAria")}
             tabIndex={locked ? -1 : 0}
           >
             <SearchIcon />
-            <span className="rail-btn-label">Recherche</span>
-            <TipPanel>Recherche globale · Ctrl+K</TipPanel>
+            <span className="rail-btn-label">{t("searchLabel")}</span>
+            <TipPanel>{t("searchTip")}</TipPanel>
           </button>
 
           <RailBtn
             active={!locked && view === "knowledge"}
-            label="Dictionnaire"
-            hint="Artistes et genres du profil Spotify actif"
+            label={t("knowledge")}
+            hint={t("knowledgeHint")}
             onClick={() => go("knowledge")}
           >
             <KnowledgeIcon />
@@ -307,8 +317,8 @@ function App() {
 
           <RailBtn
             active={!locked && view === "account"}
-            label="Compte"
-            hint="Login local, cloud et presets de réglages"
+            label={t("account")}
+            hint={t("accountHint")}
             onClick={() => go("account")}
           >
             <AccountIcon />
@@ -324,12 +334,12 @@ function App() {
               }
               setSettingsOpen(true);
             }}
-            aria-label="Sons, effets visuels et volume"
+            aria-label={t("settingsAria")}
             tabIndex={locked ? -1 : 0}
           >
             <GearIcon />
-            <span className="rail-btn-label">Réglages</span>
-            <TipPanel>Sons, effets visuels et volume</TipPanel>
+            <span className="rail-btn-label">{t("settings")}</span>
+            <TipPanel>{t("settingsTip")}</TipPanel>
           </button>
         </div>
 
@@ -337,7 +347,7 @@ function App() {
           bars={5}
           hint={false}
           className="push-eq--rail"
-          label="Mini égaliseur du rail"
+          label={t("railEqLabel")}
         />
       </aside>
 
@@ -347,22 +357,20 @@ function App() {
             <div className="gate-home-ghost" aria-hidden>
               <section className="home">
                 <header className="home-hero">
-                  <p className="eyebrow">Système de triage audio</p>
+                  <p className="eyebrow">{t("homeEyebrow")}</p>
                   <h1 className="glitch-title" data-text="BassOrder">
                     Bass<span>Order</span>
                   </h1>
-                  <p className="home-lead">
-                    La scène est déjà là — il ne manque que toi.
-                  </p>
+                  <p className="home-lead">{t("homeLeadGate")}</p>
                 </header>
                 <section className="modules">
                   <div className="module-card is-ghost" data-module="spotify">
-                    <h2>Spotify</h2>
-                    <p>Tes likes deviennent un dictionnaire de genres.</p>
+                    <h2>{t("cardSpotifyTitle")}</h2>
+                    <p>{t("cardSpotifyGhost")}</p>
                   </div>
                   <div className="module-card is-ghost" data-module="local">
-                    <h2>Fichiers</h2>
-                    <p>Analyse et classe ta musique locale.</p>
+                    <h2>{t("cardLocalGhostTitle")}</h2>
+                    <p>{t("cardLocalGhost")}</p>
                   </div>
                 </section>
               </section>
@@ -375,8 +383,8 @@ function App() {
                 fx.flash();
                 fx.toast({
                   kind: "ok",
-                  title: "C’est parti",
-                  body: "Navigation allumée — ton espace t’attend.",
+                  title: t("toastUnlockedTitle"),
+                  body: t("toastUnlockedBody"),
                 });
               }}
             />
@@ -495,6 +503,7 @@ function RailBtn({
 }
 
 function HomePanel({ onGo }: { onGo: (view: View) => void }) {
+  const { t } = useTranslation("nav");
   const paintSkel = usePaintSkeleton(160);
   if (paintSkel) {
     return (
@@ -511,26 +520,20 @@ function HomePanel({ onGo }: { onGo: (view: View) => void }) {
       <div className="ticker" aria-hidden>
         <div className="ticker-track">
           {Array.from({ length: 2 }, (_, i) => (
-            <span key={i}>
-              SCAN · TAGS ID3 · GENRE GRAPH · OLED BLACK · TRI AUTO 85% ·
-              ITUNES · DEEZER · MUSICBRAINZ · TRIAGE LIVE · COPY / MOVE · BASSORDER ·
-            </span>
+            <span key={i}>{t("homeTicker")}</span>
           ))}
         </div>
       </div>
       <header className="home-hero">
-        <p className="eyebrow">Système de triage audio</p>
+        <p className="eyebrow">{t("homeEyebrow")}</p>
         <h1 className="glitch-title" data-text="BassOrder">
           Bass<span>Order</span>
         </h1>
-        <TypeLine
-          className="home-lead"
-          text="Classe ta musique par genre : likes Spotify ou dossiers sur ton PC. Tu choisis, BassOrder propose un plan, et rien n’est écrit sur le disque sans ton accord."
-        />
+        <TypeLine className="home-lead" text={t("homeLead")} />
         <PushEq bars={24} active />
       </header>
 
-      <section className="modules" aria-label="Modules">
+      <section className="modules" aria-label={t("modulesAria")}>
         <TiltCard
           type="button"
           className="module-card"
@@ -544,14 +547,10 @@ function HomePanel({ onGo }: { onGo: (view: View) => void }) {
           <div className="module-icon">
             <SpotifyIcon />
           </div>
-          <h2>Spotify</h2>
-          <p>
-            Connecte ton compte, importe tes titres likés, et construis un
-            dictionnaire d’artistes → genres. Ensuite, tes MP3 locaux en
-            profitent automatiquement.
-          </p>
+          <h2>{t("cardSpotifyTitle")}</h2>
+          <p>{t("cardSpotifyBody")}</p>
           <span className="module-cta">
-            Commencer avec Spotify
+            {t("cardSpotifyCta")}
             <ArrowIcon />
           </span>
         </TiltCard>
@@ -569,14 +568,10 @@ function HomePanel({ onGo }: { onGo: (view: View) => void }) {
           <div className="module-icon">
             <FolderIcon />
           </div>
-          <h2>Fichiers sur mon PC</h2>
-          <p>
-            Choisis un dossier Windows. BassOrder lit les infos des titres,
-            propose des dossiers par genre, puis copie ou déplace seulement
-            quand tu cliques sur confirmer.
-          </p>
+          <h2>{t("cardLocalTitle")}</h2>
+          <p>{t("cardLocalBody")}</p>
           <span className="module-cta">
-            Analyser mon dossier
+            {t("cardLocalCta")}
             <ArrowIcon />
           </span>
         </TiltCard>

@@ -188,12 +188,24 @@ ln -sf /etc/nginx/sites-available/bassorder.smegg.cloud.conf /etc/nginx/sites-en
 nginx -t
 systemctl reload nginx
 
-echo "==> Landing sync (HTML/JS/CSS + clips metadata)"
+echo "==> Landing sync (HTML/JS/CSS + clips metadata + SEO assets)"
 mkdir -p "$WWW_ROOT/downloads" "$WWW_ROOT/clips"
 cp "$DEPLOY/landing/index.html" "$WWW_ROOT/index.html"
 # Pages légales + assets (ignore si absents)
 shopt -s nullglob
 for f in "$DEPLOY/landing/"*.html "$DEPLOY/landing/landing.js" "$DEPLOY/landing/legal.css"; do
+  [[ -f "$f" ]] && cp "$f" "$WWW_ROOT/"
+done
+for f in \
+  "$DEPLOY/landing/favicon.ico" \
+  "$DEPLOY/landing/favicon.png" \
+  "$DEPLOY/landing/logo.svg" \
+  "$DEPLOY/landing/apple-touch-icon.png" \
+  "$DEPLOY/landing/og-image.png" \
+  "$DEPLOY/landing/robots.txt" \
+  "$DEPLOY/landing/sitemap.xml" \
+  "$DEPLOY/landing/site.webmanifest"
+do
   [[ -f "$f" ]] && cp "$f" "$WWW_ROOT/"
 done
 for f in "$DEPLOY/landing/clips/"*.json "$DEPLOY/landing/clips/"*.md; do

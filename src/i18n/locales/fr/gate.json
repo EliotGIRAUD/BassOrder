@@ -1,0 +1,19 @@
+{
+  "titleLoading": "Chargement…",
+  "titleWelcome": "Bienvenue",
+  "titleHello": "Salut {{name}}",
+  "titleUnlocking": "Déverrouillage…",
+  "ledeLoading": "On prépare ton espace…",
+  "ledeCreate": "Un pseudo, une couleur — ensuite Spotify (ou tes fichiers) pour classer ta musique.",
+  "ledeOpening": "Ouverture de ton espace…",
+  "avatarPreviewTitle": "Aperçu de ton avatar",
+  "pseudoLabel": "Ton pseudo",
+  "pseudoPlaceholder": "ex. Eliot",
+  "colorAria": "Couleur",
+  "submit": "Allumer BassOrder",
+  "hintBusy": "Ouverture…",
+  "hintNeedPin": "Entre ton PIN pour continuer.",
+  "hintWait": "Un instant…",
+  "pinPrompt": "PIN / mot de passe pour {{name}}",
+  "pinWrong": "PIN / mot de passe incorrect."
+}

@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import type { AppLocale } from "../i18n";
 import { dbGetPath, dbRevealPath, isTauri } from "../db";
 import { playNotify, unlockAudio } from "./sounds";
 import {
@@ -16,6 +18,8 @@ type Props = {
 };
 
 export function SettingsPanel({ open, onClose }: Props) {
+  const { t } = useTranslation("settings");
+  const { t: tc } = useTranslation("common");
   const { prefs, patch, reset, muteFx, unmuteFx } = usePrefs();
   const muted = isFxMuted(prefs);
 
@@ -38,16 +42,16 @@ export function SettingsPanel({ open, onClose }: Props) {
   }
 
   return (
-    <div className="settings-overlay" role="dialog" aria-modal="true" aria-label="Paramètres">
-      <button type="button" className="settings-backdrop" onClick={onClose} aria-label="Fermer" />
+    <div className="settings-overlay" role="dialog" aria-modal="true" aria-label={t("dialogAria")}>
+      <button type="button" className="settings-backdrop" onClick={onClose} aria-label={tc("close")} />
       <aside className="settings-sheet">
         <header className="settings-top">
           <div>
-            <p className="eyebrow">Machine</p>
-            <h2>Paramètres</h2>
+            <p className="eyebrow">{t("eyebrow")}</p>
+            <h2>{t("title")}</h2>
           </div>
           <button type="button" className="btn-ghost" onClick={onClose}>
-            Fermer
+            {tc("close")}
           </button>
         </header>
         <SettingsSheetBody
@@ -78,6 +82,7 @@ function SettingsSheetBody({
   muteFx: () => void;
   unmuteFx: () => void;
 }) {
+  const { t } = useTranslation("settings");
   const paintSkel = usePaintSkeleton(140);
   if (paintSkel) {
     return <SettingsSkeleton />;
@@ -85,24 +90,39 @@ function SettingsSheetBody({
 
   return (
     <>
+      <section className="settings-block">
+        <h3>{t("language")}</h3>
+        <p style={{ opacity: 0.7, fontSize: "0.85rem", marginBottom: "0.75rem" }}>
+          {t("languageHint")}
+        </p>
+        <label className="settings-select">
+          <span>{t("language")}</span>
+          <select
+            value={prefs.locale}
+            onChange={(e) =>
+              patch({ locale: e.target.value as AppLocale })
+            }
+          >
+            <option value="en">{t("langEn")}</option>
+            <option value="fr">{t("langFr")}</option>
+          </select>
+        </label>
+      </section>
+
       <section
         className={`settings-fx-master${muted ? " is-perf" : " is-show"}`}
-        aria-label="Mode effets"
+        aria-label={t("fxMasterAria")}
       >
         <div className="settings-fx-master-glow" aria-hidden />
         <div className="settings-fx-master-copy">
-          <p className="eyebrow">{muted ? "Mode perf" : "Mode spectacle"}</p>
-          <strong>{muted ? "Animations coupées" : "Tout allumé"}</strong>
-          <em>
-            {muted
-              ? "Curseur, EQ, cadres, sons — off. Clique Spectacle pour tout remettre."
-              : "Un clic sur Perf coupe tout d’un coup. Tu peux retoucher ensuite."}
-          </em>
+          <p className="eyebrow">{muted ? t("modePerf") : t("modeShow")}</p>
+          <strong>{muted ? t("fxOffTitle") : t("fxOnTitle")}</strong>
+          <em>{muted ? t("fxOffHint") : t("fxOnHint")}</em>
         </div>
         <div
           className="settings-fx-switch"
           role="group"
-          aria-label="Basculer les effets"
+          aria-label={t("fxSwitchAria")}
         >
           <span
             className="settings-fx-thumb"
@@ -122,7 +142,7 @@ function SettingsSheetBody({
             <span className="settings-fx-ico" aria-hidden>
               ✦
             </span>
-            Spectacle
+            {t("spectacle")}
           </button>
           <button
             type="button"
@@ -133,64 +153,64 @@ function SettingsSheetBody({
             <span className="settings-fx-ico" aria-hidden>
               ◆
             </span>
-            Perf
+            {t("perf")}
           </button>
         </div>
       </section>
 
       <section className="settings-block">
-        <h3>Effets visuels</h3>
+        <h3>{t("visualEffects")}</h3>
         <Toggle
-          label="Curseur magnétique"
-          hint="Halo lumineux + anneau. Sans traînée laser."
+          label={t("cursor")}
+          hint={t("cursorHint")}
           checked={prefs.cursor}
           onChange={(cursor) => patch({ cursor })}
         />
         <Toggle
-          label="Impacts au clic"
-          hint="Flash, ripples et étincelles"
+          label={t("particles")}
+          hint={t("particlesHint")}
           checked={prefs.particles}
           onChange={(particles) => patch({ particles })}
         />
         <Toggle
-          label="Cadres animés"
-          hint="Filet lumineux et respiration des groupes"
+          label={t("frames")}
+          hint={t("framesHint")}
           checked={prefs.frames}
           onChange={(frames) => patch({ frames })}
         />
         <Toggle
-          label="Lueur des boutons"
-          hint="Anneau or / mint qui tourne"
+          label={t("shine")}
+          hint={t("shineHint")}
           checked={prefs.shine}
           onChange={(shine) => patch({ shine })}
         />
         <Toggle
-          label="Fond atmosphère"
-          hint="Orbes et grille. Sans grain (noir OLED)."
+          label={t("background")}
+          hint={t("backgroundHint")}
           checked={prefs.background}
           onChange={(background) => patch({ background })}
         />
         <Toggle
-          label="Effets du rail"
-          hint="Scan, pulse et EQ du menu gauche (pas la navigation)"
+          label={t("rail")}
+          hint={t("railHint")}
           checked={prefs.rail}
           onChange={(rail) => patch({ rail })}
         />
         <Toggle
-          label="Texte scramble"
-          hint="Décodage au survol des titres"
+          label={t("scramble")}
+          hint={t("scrambleHint")}
           checked={prefs.scramble}
           onChange={(scramble) => patch({ scramble })}
         />
         <Toggle
-          label="Interactions jouables"
-          hint="Springs / idle des EQ et barres. Le drag reste toujours actif."
+          label={t("playful")}
+          hint={t("playfulHint")}
           checked={prefs.playful}
           onChange={(playful) => patch({ playful })}
         />
         <label className="settings-slider">
           <span>
-            Intensité des effets
+            {t("intensity")}
             <em>{Math.round(prefs.intensity * 100)}%</em>
           </span>
           <input
@@ -205,10 +225,10 @@ function SettingsSheetBody({
       </section>
 
       <section className="settings-block">
-        <h3>Lecture</h3>
+        <h3>{t("playback")}</h3>
         <label className="settings-slider">
           <span>
-            Volume de la musique
+            {t("musicVolume")}
             <em>{Math.round(prefs.musicVolume * 100)}%</em>
           </span>
           <input
@@ -223,16 +243,16 @@ function SettingsSheetBody({
       </section>
 
       <section className="settings-block">
-        <h3>Notifications</h3>
+        <h3>{t("notifications")}</h3>
         <Toggle
-          label="Toasts à l’écran"
-          hint="Messages en bas à droite"
+          label={t("toasts")}
+          hint={t("toastsHint")}
           checked={prefs.toasts}
           onChange={(toasts) => patch({ toasts })}
         />
         <Toggle
-          label="Son « poc »"
-          hint="Petit clic à chaque notification"
+          label={t("sounds")}
+          hint={t("soundsHint")}
           checked={prefs.sounds}
           onChange={(sounds) => {
             patch({ sounds });
@@ -244,7 +264,7 @@ function SettingsSheetBody({
         />
         <label className="settings-slider">
           <span>
-            Volume des toasts
+            {t("toastVolume")}
             <em>{Math.round(prefs.volume * 100)}%</em>
           </span>
           <input
@@ -258,14 +278,14 @@ function SettingsSheetBody({
           />
         </label>
         <label className="settings-select">
-          <span>Durée des toasts</span>
+          <span>{t("toastDuration")}</span>
           <select
             value={prefs.toastMs}
             onChange={(e) => patch({ toastMs: Number(e.target.value) as Prefs["toastMs"] })}
           >
-            <option value={5000}>Court — 5 s</option>
-            <option value={12000}>Normal — 12 s</option>
-            <option value={20000}>Long — 20 s</option>
+            <option value={5000}>{t("toastShort")}</option>
+            <option value={12000}>{t("toastNormal")}</option>
+            <option value={20000}>{t("toastLong")}</option>
           </select>
         </label>
         <button
@@ -276,7 +296,7 @@ function SettingsSheetBody({
             playNotify("go", prefs.volume);
           }}
         >
-          Tester le son
+          {t("testSound")}
         </button>
       </section>
 
@@ -290,7 +310,7 @@ function SettingsSheetBody({
             playNotify("ok", DEFAULT_PREFS.volume);
           }}
         >
-          Réinitialiser tout
+          {t("resetAll")}
         </button>
       </footer>
     </>
@@ -298,6 +318,7 @@ function SettingsSheetBody({
 }
 
 function DbRevealButton() {
+  const { t } = useTranslation("settings");
   const [path, setPath] = useState<string | null>(null);
   useEffect(() => {
     if (!isTauri()) return;
@@ -306,16 +327,11 @@ function DbRevealButton() {
   if (!isTauri()) return null;
   return (
     <section className="settings-block" style={{ marginBottom: "1rem" }}>
-      <h3>Base locale</h3>
+      <h3>{t("localDb")}</h3>
       <p style={{ opacity: 0.7, fontSize: "0.85rem", marginBottom: "0.75rem" }}>
-        Fichier SQLite <code>bassorder.db</code>
-        {path ? (
-          <>
-            {" "}
-            — <code style={{ wordBreak: "break-all" }}>{path}</code>
-          </>
-        ) : null}
-        . Ferme BassOrder avant d’éditer avec DB Browser.
+        {t("localDbHint", {
+          path: path ? ` — ${path}` : "",
+        })}
       </p>
       <button
         type="button"
@@ -324,7 +340,7 @@ function DbRevealButton() {
           void dbRevealPath();
         }}
       >
-        Ouvrir le dossier de la base
+        {t("openDbFolder")}
       </button>
     </section>
   );

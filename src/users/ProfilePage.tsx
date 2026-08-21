@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
+import { intlLocale, type AppLocale } from "../i18n";
 import { listLibraries } from "../local/libraryCache";
 import { listImports } from "../spotify/importCache";
 import { listProfiles } from "../spotify/profiles";
@@ -15,6 +17,9 @@ type Props = {
 };
 
 export function ProfilePage({ onLeave }: Props) {
+  const { t, i18n } = useTranslation("profile");
+  const { t: tc } = useTranslation("common");
+  const loc = intlLocale((i18n.language.startsWith("fr") ? "fr" : "en") as AppLocale);
   const { user, rename, recolor, setAvatar, remove, leave } = useUserSession();
   const fx = useExperience();
   const paintSkel = usePaintSkeleton(200);
@@ -60,16 +65,16 @@ export function ProfilePage({ onLeave }: Props) {
     if (next.length < 2) {
       fx.toast({
         kind: "warn",
-        title: "Pseudo trop court",
-        body: "Au moins 2 caractères.",
+        title: t("toastShortName"),
+        body: t("toastShortNameBody"),
       });
       return;
     }
     rename(user!.id, next);
     fx.toast({
       kind: "ok",
-      title: "Pseudo mis à jour",
-      body: `Tu es maintenant « ${next} ».`,
+      title: t("toastRenamed"),
+      body: t("toastRenamedBody", { name: next }),
     });
   }
 
@@ -77,8 +82,8 @@ export function ProfilePage({ onLeave }: Props) {
     recolor(user!.id, color);
     fx.toast({
       kind: "hint",
-      title: "Couleur changée",
-      body: "Ton avatar suit la nouvelle teinte.",
+      title: t("toastColor"),
+      body: t("toastColorBody"),
     });
   }
 
@@ -86,10 +91,8 @@ export function ProfilePage({ onLeave }: Props) {
     void setAvatar(user!.id, url).then(() => {
       fx.toast({
         kind: "ok",
-        title: url ? "Photo de profil" : "Monogramme",
-        body: url
-          ? "Ta PP Spotify est maintenant ton avatar BassOrder."
-          : "Retour à l’avatar couleur + initiales.",
+        title: url ? t("toastPhoto") : t("toastMonogram"),
+        body: url ? t("toastPhotoBody") : t("toastMonogramBody"),
       });
     });
   }
@@ -107,8 +110,8 @@ export function ProfilePage({ onLeave }: Props) {
     remove(user!.id);
     fx.toast({
       kind: "warn",
-      title: "Espace effacé",
-      body: "Tu pourras recréer un pseudo au prochain lancement.",
+      title: t("toastWiped"),
+      body: t("toastWipedBody"),
     });
     onLeave();
   }
@@ -125,12 +128,9 @@ export function ProfilePage({ onLeave }: Props) {
     <section className="profile-page local-stage">
       <header className="local-topbar">
         <div className="local-topbar-copy">
-          <p className="eyebrow">Profil BassOrder</p>
-          <h2>Hey, {user.name}</h2>
-          <p className="local-lede">
-            Ton espace local : pseudo, couleur, photo, et un petit terrain de jeu.
-            Rien n’est synchronisé dans le cloud — tout reste sur cette machine.
-          </p>
+          <p className="eyebrow">{t("eyebrow")}</p>
+          <h2>{t("title", { name: user.name })}</h2>
+          <p className="local-lede">{t("lede")}</p>
         </div>
       </header>
 
@@ -143,22 +143,23 @@ export function ProfilePage({ onLeave }: Props) {
           imageUrl={user.avatarUrl}
         />
         <div className="profile-hero-copy">
-          <p className="profile-kicker">Identité locale</p>
+          <p className="profile-kicker">{t("identity")}</p>
           <h3>{user.name}</h3>
           <p>
-            Créé le{" "}
-            {new Date(user.createdAt).toLocaleDateString("fr-FR", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
+            {t("createdOn", {
+              date: new Date(user.createdAt).toLocaleDateString(loc, {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              }),
             })}
-            {" · "}
-            dernière session{" "}
-            {new Date(user.lastUsedAt).toLocaleString("fr-FR", {
-              day: "numeric",
-              month: "short",
-              hour: "2-digit",
-              minute: "2-digit",
+            {t("lastSession", {
+              when: new Date(user.lastUsedAt).toLocaleString(loc, {
+                day: "numeric",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
             })}
           </p>
         </div>
@@ -167,10 +168,10 @@ export function ProfilePage({ onLeave }: Props) {
       <div className="profile-grid">
         <form className="profile-card fx-frame fx-frame--mid" onSubmit={onRename}>
           <span className="spin-border" aria-hidden />
-          <h3>Pseudo</h3>
-          <p>Change ton nom d’affichage dans le rail et la gate.</p>
+          <h3>{t("pseudoTitle")}</h3>
+          <p>{t("pseudoHelp")}</p>
           <label className="profile-field">
-            <span>Ton pseudo</span>
+            <span>{t("pseudoLabel")}</span>
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
@@ -180,17 +181,15 @@ export function ProfilePage({ onLeave }: Props) {
             />
           </label>
           <button type="submit" className="btn-primary">
-            Enregistrer
+            {t("save")}
           </button>
         </form>
 
         <div className="profile-card fx-frame fx-frame--mid">
           <span className="spin-border" aria-hidden />
-          <h3>Photo de profil</h3>
+          <h3>{t("photoTitle")}</h3>
           <p>
-            {spotifyAvatars.length > 0
-              ? "Choisis une PP Spotify, ou reviens au monogramme."
-              : "Connecte Spotify pour proposer ta photo de profil."}
+            {spotifyAvatars.length > 0 ? t("photoHelpHas") : t("photoHelpEmpty")}
           </p>
           <div className="profile-avatar-picks" role="list">
             <button
@@ -198,8 +197,8 @@ export function ProfilePage({ onLeave }: Props) {
               role="listitem"
               className={`profile-avatar-pick${!user.avatarUrl ? " is-active" : ""}`}
               onClick={() => onPickAvatar(null)}
-              title="Monogramme"
-              aria-label="Utiliser le monogramme"
+              title={t("monogramTitle")}
+              aria-label={t("monogramAria")}
             >
               <ProfileAura
                 name={user.name}
@@ -217,7 +216,7 @@ export function ProfilePage({ onLeave }: Props) {
                 className={`profile-avatar-pick${user.avatarUrl === item.url ? " is-active" : ""}`}
                 onClick={() => onPickAvatar(item.url)}
                 title={item.label}
-                aria-label={`Utiliser la photo de ${item.label}`}
+                aria-label={t("photoAria", { label: item.label })}
               >
                 <ProfileAura
                   name={item.label}
@@ -234,8 +233,8 @@ export function ProfilePage({ onLeave }: Props) {
 
         <div className="profile-card fx-frame fx-frame--mid">
           <span className="spin-border" aria-hidden />
-          <h3>Couleur</h3>
-          <p>Approche le curseur — les pastilles se collent à toi.</p>
+          <h3>{t("colorTitle")}</h3>
+          <p>{t("colorHelp")}</p>
           <MagneticField className="profile-swatches" strength={34} radius={120}>
             {USER_COLORS.map((c) => (
               <button
@@ -245,7 +244,7 @@ export function ProfilePage({ onLeave }: Props) {
                 style={{ ["--swatch" as string]: c }}
                 onClick={() => onColor(c)}
                 title={c}
-                aria-label={`Couleur ${c}`}
+                aria-label={t("colorAria", { hex: c })}
               />
             ))}
           </MagneticField>
@@ -253,18 +252,18 @@ export function ProfilePage({ onLeave }: Props) {
 
         <div className="profile-card fx-frame fx-frame--mid profile-stats">
           <span className="spin-border" aria-hidden />
-          <h3>Sur cette machine</h3>
+          <h3>{t("statsTitle")}</h3>
           <dl>
             <div>
-              <dt>Analyses locales</dt>
+              <dt>{t("statLocal")}</dt>
               <dd>{stats.libraries}</dd>
             </div>
             <div>
-              <dt>Imports Spotify</dt>
+              <dt>{t("statImports")}</dt>
               <dd>{stats.imports}</dd>
             </div>
             <div>
-              <dt>Comptes Spotify</dt>
+              <dt>{t("statAccounts")}</dt>
               <dd>{stats.spotifyProfiles}</dd>
             </div>
           </dl>
@@ -274,8 +273,8 @@ export function ProfilePage({ onLeave }: Props) {
       <div className="profile-playground fx-frame fx-frame--soft">
         <span className="spin-border" aria-hidden />
         <div className="profile-playground-head">
-          <h3>Terrain orbital</h3>
-          <p>Fling les nœuds — gravité + collisions soft (style 2026).</p>
+          <h3>{t("playgroundTitle")}</h3>
+          <p>{t("playgroundHelp")}</p>
         </div>
         <OrbitField
           labels={["YOU", "TAGS", "LIKES", "MP3", "GENRE", "SYNC", "BASS", "ORDER"]}
@@ -285,14 +284,14 @@ export function ProfilePage({ onLeave }: Props) {
 
       <footer className="profile-actions">
         <button type="button" className="btn-ghost" onClick={onLock}>
-          Verrouiller
+          {t("lock")}
         </button>
         <button
           type="button"
           className={`btn-ghost profile-danger${confirmWipe ? " is-confirm" : ""}`}
           onClick={onDelete}
         >
-          {confirmWipe ? "Confirmer la suppression" : "Réinitialiser l’espace"}
+          {confirmWipe ? t("confirmDelete") : t("resetSpace")}
         </button>
         {confirmWipe && (
           <button
@@ -300,7 +299,7 @@ export function ProfilePage({ onLeave }: Props) {
             className="btn-ghost"
             onClick={() => setConfirmWipe(false)}
           >
-            Annuler
+            {tc("cancel")}
           </button>
         )}
       </footer>

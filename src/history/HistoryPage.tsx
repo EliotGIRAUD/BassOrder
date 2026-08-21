@@ -1,4 +1,6 @@
 import { useEffect, useState, type MouseEvent } from "react";
+import { useTranslation } from "react-i18next";
+import { intlLocale, type AppLocale } from "../i18n";
 import { subscribeDbChanged } from "../db";
 import {
   forgetAllAnalyses,
@@ -47,6 +49,9 @@ export function HistoryPage({ kind, onOpenLocal }: Props) {
 }
 
 function LocalHistoryPage({ onOpenLocal }: { onOpenLocal: () => void }) {
+  const { t, i18n } = useTranslation("history");
+  const loc = intlLocale((i18n.language.startsWith("fr") ? "fr" : "en") as AppLocale);
+  const { t: tc } = useTranslation("common");
   const fx = useExperience();
   const paintSkel = usePaintSkeleton(180);
   const [items, setItems] = useState<SavedLibrary[]>(listLibraries);
@@ -80,8 +85,12 @@ function LocalHistoryPage({ onOpenLocal }: { onOpenLocal: () => void }) {
     onOpenLocal();
     fx.toast({
       kind: "ok",
-      title: "Analyse rouverte",
-      body: `${lib.fileCount} titre${lib.fileCount > 1 ? "s" : ""} · ${lib.sortedPercent}% tri · ${formatSavedAt(lib.savedAt)}`,
+      title: t("toastReopened"),
+      body: t("toastReopenedBody", {
+        count: lib.fileCount,
+        percent: lib.sortedPercent,
+        when: formatSavedAt(lib.savedAt, loc, tc),
+      }),
     });
   }
 
@@ -90,8 +99,8 @@ function LocalHistoryPage({ onOpenLocal }: { onOpenLocal: () => void }) {
     refresh();
     fx.toast({
       kind: "hint",
-      title: "Retiré de l’historique",
-      body: "Cette analyse n’apparaît plus ici. Tes titres sur le disque n’ont pas été modifiés.",
+      title: t("toastRemoved"),
+      body: t("toastRemovedBody"),
     });
   }
 
@@ -100,8 +109,8 @@ function LocalHistoryPage({ onOpenLocal }: { onOpenLocal: () => void }) {
     refresh();
     fx.toast({
       kind: "hint",
-      title: "Historique vidé",
-      body: "Toutes les analyses en mémoire ont été retirées. Aucun fichier audio n’a été touché.",
+      title: t("toastCleared"),
+      body: t("toastClearedBody"),
     });
   }
 
@@ -117,15 +126,11 @@ function LocalHistoryPage({ onOpenLocal }: { onOpenLocal: () => void }) {
     <section className="history-page">
       <header className="local-topbar">
         <div className="local-topbar-copy">
-          <p className="eyebrow">Analyses déjà faites</p>
+          <p className="eyebrow">{t("localEyebrow")}</p>
           <h2>
-            <ScrambleText text="Historique local" />
+            <ScrambleText text={t("localTitle")} />
           </h2>
-          <p className="local-lede">
-            Chaque analyse de dossier est mémorisée ici. Rouvre-en une pour
-            reprendre sans rescanner, ou retire-la de la liste (tes fichiers
-            restent intacts).
-          </p>
+          <p className="local-lede">{t("localLede")}</p>
         </div>
         {items.length > 0 && (
           <div className="local-toolbar">
@@ -133,9 +138,9 @@ function LocalHistoryPage({ onOpenLocal }: { onOpenLocal: () => void }) {
               type="button"
               className="btn-ghost"
               onClick={forgetAll}
-              title="Vide toute la liste d’analyses en mémoire. Aucun fichier audio n’est supprimé."
+              title={t("clearAllLocalTitle")}
             >
-              Vider tout l’historique
+              {t("clearAll")}
             </button>
           </div>
         )}
@@ -148,15 +153,10 @@ function LocalHistoryPage({ onOpenLocal }: { onOpenLocal: () => void }) {
             height={160}
             className="empty-orbit"
           />
-          <h3>Aucune analyse pour l’instant</h3>
-          <p>
-            Va dans <strong>Mes fichiers</strong>, choisis un dossier de musique,
-            puis lance l’analyse. Une entrée est gardée <strong>par dossier</strong>{" "}
-            : les relances mettent à jour la même analyse (avec un journal des
-            détections).
-          </p>
+          <h3>{t("localEmptyTitle")}</h3>
+          <p>{t("localEmptyBody")}</p>
           <button type="button" className="btn-primary" onClick={onOpenLocal}>
-            Ouvrir Mes fichiers
+            {t("openLocal")}
           </button>
         </div>
       ) : (
@@ -167,6 +167,7 @@ function LocalHistoryPage({ onOpenLocal }: { onOpenLocal: () => void }) {
               lib={lib}
               active={lib.id === activeId}
               index={index}
+              loc={loc}
               onOpen={() => openItem(lib)}
               onForget={() => forgetItem(lib.id)}
             />
@@ -178,6 +179,8 @@ function LocalHistoryPage({ onOpenLocal }: { onOpenLocal: () => void }) {
 }
 
 function SpotifyHistoryPage({ onOpenSpotify }: { onOpenSpotify: () => void }) {
+  const { t, i18n } = useTranslation("history");
+  const loc = intlLocale((i18n.language.startsWith("fr") ? "fr" : "en") as AppLocale);
   const fx = useExperience();
   const paintSkel = usePaintSkeleton(180);
   const [items, setItems] = useState<SavedSpotifyImport[]>(listImports);
@@ -226,8 +229,11 @@ function SpotifyHistoryPage({ onOpenSpotify }: { onOpenSpotify: () => void }) {
       onOpenSpotify();
       fx.toast({
         kind: "ok",
-        title: "Profil rouvert",
-        body: `${item.profileName} · dictionnaire de ce compte · ${item.likedCount} likes.`,
+        title: t("toastProfileReopened"),
+        body: t("toastProfileReopenedBody", {
+          name: item.profileName,
+          likes: item.likedCount,
+        }),
       });
     })();
   }
@@ -237,8 +243,8 @@ function SpotifyHistoryPage({ onOpenSpotify }: { onOpenSpotify: () => void }) {
     refresh();
     fx.toast({
       kind: "hint",
-      title: "Import oublié",
-      body: "La base active sur le disque n’est pas effacée.",
+      title: t("toastImportForgotten"),
+      body: t("toastImportForgottenBody"),
     });
   }
 
@@ -247,8 +253,8 @@ function SpotifyHistoryPage({ onOpenSpotify }: { onOpenSpotify: () => void }) {
     refresh();
     fx.toast({
       kind: "hint",
-      title: "Historique Spotify vidé",
-      body: "Les snapshots d’imports ont été oubliés.",
+      title: t("toastSpotifyCleared"),
+      body: t("toastSpotifyClearedBody"),
     });
   }
 
@@ -264,22 +270,18 @@ function SpotifyHistoryPage({ onOpenSpotify }: { onOpenSpotify: () => void }) {
     <section className="history-page">
       <header className="local-topbar">
         <div className="local-topbar-copy">
-          <p className="eyebrow">Imports déjà faits</p>
+          <p className="eyebrow">{t("spotifyEyebrow")}</p>
           <h2>
-            <ScrambleText text="Historique Spotify" />
+            <ScrambleText text={t("spotifyTitle")} />
           </h2>
-          <p className="local-lede">
-            Chaque import de likes est listé ici, par profil. Ouvre-en un pour
-            activer ce compte Spotify et son dictionnaire (sans restaurer un
-            vieux snapshot figé).
-          </p>
+          <p className="local-lede">{t("spotifyLede")}</p>
         </div>
         <div className="local-toolbar">
           {profiles.length > 0 && (
             <label className="history-filter">
-              <span className="sr-only">Filtrer par profil</span>
+              <span className="sr-only">{t("filterProfileSr")}</span>
               <select value={filterId} onChange={(e) => setFilterId(e.target.value)}>
-                <option value="">Tous les profils</option>
+                <option value="">{t("allProfiles")}</option>
                 {profiles.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -293,9 +295,9 @@ function SpotifyHistoryPage({ onOpenSpotify }: { onOpenSpotify: () => void }) {
               type="button"
               className="btn-ghost"
               onClick={forgetAll}
-              title="Vide la liste des imports mémorisés"
+              title={t("clearAllSpotifyTitle")}
             >
-              Vider tout l’historique
+              {t("clearAll")}
             </button>
           )}
         </div>
@@ -309,26 +311,16 @@ function SpotifyHistoryPage({ onOpenSpotify }: { onOpenSpotify: () => void }) {
             className="empty-orbit"
           />
           <h3>
-            {items.length === 0
-              ? "Aucun import pour l’instant"
-              : "Aucun import pour ce profil"}
+            {items.length === 0 ? t("spotifyEmptyNone") : t("spotifyEmptyFilter")}
           </h3>
           <p>
-            {items.length === 0 ? (
-              <>
-                Va dans <strong>Spotify</strong>, connecte ton compte et importe
-                tes likes. Chaque mise à jour crée une entrée ici.
-              </>
-            ) : (
-              <>
-                Ce filtre ne montre rien. Choisis <strong>Tous les profils</strong>{" "}
-                ou un autre compte.
-              </>
-            )}
+            {items.length === 0
+              ? t("spotifyEmptyNoneBody")
+              : t("spotifyEmptyFilterBody")}
           </p>
           {items.length === 0 ? (
             <button type="button" className="btn-primary" onClick={onOpenSpotify}>
-              Ouvrir Spotify
+              {t("openSpotify")}
             </button>
           ) : (
             <button
@@ -336,7 +328,7 @@ function SpotifyHistoryPage({ onOpenSpotify }: { onOpenSpotify: () => void }) {
               className="btn-primary"
               onClick={() => setFilterId("")}
             >
-              Voir tous les profils
+              {t("seeAllProfiles")}
             </button>
           )}
         </div>
@@ -348,6 +340,7 @@ function SpotifyHistoryPage({ onOpenSpotify }: { onOpenSpotify: () => void }) {
               item={item}
               active={item.id === activeId}
               index={index}
+              loc={loc}
               onOpen={() => openItem(item)}
               onForget={() => forgetItem(item.id)}
             />
@@ -362,15 +355,19 @@ function SpotifyImportCard({
   item,
   active,
   index,
+  loc,
   onOpen,
   onForget,
 }: {
   item: SavedSpotifyImport;
   active: boolean;
   index: number;
+  loc: "en-US" | "fr-FR";
   onOpen: () => void;
   onForget: () => void;
 }) {
+  const { t } = useTranslation("history");
+  const { t: tc } = useTranslation("common");
   const classified = item.classifiedArtists;
   const artists = item.artistCount;
   const percent =
@@ -406,49 +403,49 @@ function SpotifyImportCard({
             </span>
             <div>
               <strong>{item.profileName}</strong>
-              <em>{item.displayName ?? "Compte Spotify"}</em>
+              <em>{item.displayName ?? tc("spotifyAccount")}</em>
             </div>
           </div>
           <div className="history-card-badges">
-            {active && <span className="history-badge is-live">Actif</span>}
+            {active && <span className="history-badge is-live">{tc("active")}</span>}
             <time className="history-badge" dateTime={new Date(item.savedAt).toISOString()}>
-              {formatSavedAt(item.savedAt)}
+              {formatSavedAt(item.savedAt, loc, tc)}
             </time>
           </div>
         </header>
 
         <PushBar
           value={percent}
-          label="Artistes genrés"
+          label={t("artistsGenred")}
           goal={`${classified}/${artists || "—"}`}
-          ariaLabel={`Artistes classés ${percent} pour cent`}
+          ariaLabel={t("artistsClassifiedAria", { percent })}
           highAt={70}
           midAt={35}
         />
 
         <dl className="history-stats">
           <div>
-            <dt>Likes</dt>
+            <dt>{t("statLikes")}</dt>
             <dd>{item.likedCount}</dd>
           </div>
           <div>
-            <dt>Artistes</dt>
+            <dt>{t("statArtists")}</dt>
             <dd>{item.artistCount}</dd>
           </div>
           <div>
-            <dt>Classés</dt>
+            <dt>{t("statClassified")}</dt>
             <dd>{item.classifiedArtists}</dd>
           </div>
           <div>
-            <dt>Genres</dt>
+            <dt>{t("statGenres")}</dt>
             <dd>{item.groupCount}</dd>
           </div>
           <div>
-            <dt>Profil</dt>
+            <dt>{t("statProfile")}</dt>
             <dd className="history-stat-text">{item.profileName}</dd>
           </div>
           <div>
-            <dt>Compte</dt>
+            <dt>{t("statAccount")}</dt>
             <dd className="history-stat-text">{item.displayName ?? "—"}</dd>
           </div>
         </dl>
@@ -469,17 +466,17 @@ function SpotifyImportCard({
             type="button"
             className="btn-primary"
             onClick={onOpen}
-            title="Ouvre Spotify avec le profil lié à cet import (dictionnaire actuel)"
+            title={t("openInSpotifyTitle")}
           >
-            Ouvrir dans Spotify
+            {t("openInSpotify")}
           </button>
           <button
             type="button"
             className="btn-ghost history-forget"
             onClick={onForget}
-            title="Retire ce snapshot de l’historique (la base active sur le disque n’est pas effacée)"
+            title={t("forgetImportTitle")}
           >
-            Retirer de la liste
+            {t("removeFromList")}
           </button>
         </footer>
       </article>
@@ -491,15 +488,19 @@ function HistoryCard({
   lib,
   active,
   index,
+  loc,
   onOpen,
   onForget,
 }: {
   lib: SavedLibrary;
   active: boolean;
   index: number;
+  loc: "en-US" | "fr-FR";
   onOpen: () => void;
   onForget: () => void;
 }) {
+  const { t } = useTranslation("history");
+  const { t: tc } = useTranslation("common");
   const percent = Math.min(100, Math.max(0, lib.sortedPercent));
   const genres = lib.topGenres;
   const duration = lib.durationSecs;
@@ -529,21 +530,21 @@ function HistoryCard({
             <em title={lib.root}>{shortPath(lib.root)}</em>
           </div>
           <div className="history-card-badges">
-            {active && <span className="history-badge is-live">Ouverte</span>}
+            {active && <span className="history-badge is-live">{t("badgeOpen")}</span>}
             <span className="history-badge">
-              {lib.mode === "move" ? "Déplacer" : "Copier"}
+              {lib.mode === "move" ? t("modeMove") : t("modeCopy")}
             </span>
             <time className="history-badge" dateTime={new Date(lib.savedAt).toISOString()}>
-              {formatSavedAt(lib.savedAt)}
+              {formatSavedAt(lib.savedAt, loc, tc)}
             </time>
           </div>
         </header>
 
         <PushBar
           value={percent}
-          label="Tri auto"
-          goal={percent >= 85 ? "Objectif 85% atteint" : "Objectif ≥ 85%"}
-          ariaLabel={`Tri automatique ${percent} pour cent`}
+          label={t("pushAutoSort")}
+          goal={percent >= 85 ? t("goalReached") : t("goalTarget")}
+          ariaLabel={t("autoSortAria", { percent })}
           showGoalMark
           highAt={85}
           midAt={40}
@@ -555,37 +556,37 @@ function HistoryCard({
 
         <dl className="history-stats">
           <div>
-            <dt>Titres</dt>
+            <dt>{t("statTracks")}</dt>
             <dd>{lib.fileCount}</dd>
           </div>
           <div>
-            <dt>Genres</dt>
+            <dt>{t("statGenres")}</dt>
             <dd>{folders}</dd>
           </div>
           <div>
-            <dt>À trier</dt>
+            <dt>{t("statToSort")}</dt>
             <dd>{lib.unknownCount}</dd>
           </div>
           <div>
-            <dt>Enrichis</dt>
+            <dt>{t("statEnriched")}</dt>
             <dd>{lib.lookedUpCount}</dd>
           </div>
           <div>
-            <dt>Illisibles</dt>
+            <dt>{t("statUnreadable")}</dt>
             <dd>{lib.unreadCount}</dd>
           </div>
           <div>
-            <dt>Durée</dt>
+            <dt>{t("statDuration")}</dt>
             <dd>{formatDuration(duration)}</dd>
           </div>
         </dl>
 
         {genres.length > 0 && (
           <div className="history-tags-block">
-            <p className="history-tags-label">Top genres (aperçu — ne classe rien)</p>
+            <p className="history-tags-label">{t("topGenres")}</p>
             <ul className="history-tags">
               {genres.slice(0, 8).map((group) => (
-                <li key={group.folder} title={`${group.genre} · ${group.count} titres`}>
+                <li key={group.folder} title={`${group.genre} · ${group.count}`}>
                   <span className="history-tag-name">{group.genre}</span>
                   <span className="history-tag-count">{group.count}</span>
                 </li>
@@ -600,14 +601,12 @@ function HistoryCard({
         <footer className="history-card-actions">
           {lib.selectedFolder && (
             <p className="history-card-folder">
-              Dossier ouvert : <span>{lib.selectedFolder}</span>
+              {t("openedFolder")} <span>{lib.selectedFolder}</span>
             </p>
           )}
           <button type="button" className="btn-primary" onClick={onOpen}>
-            Rouvrir cette analyse
-            <TipPanel side="bottom">
-              Rouvre cette analyse dans Mes fichiers
-            </TipPanel>
+            {t("reopenAnalysis")}
+            <TipPanel side="bottom">{t("reopenTip")}</TipPanel>
           </button>
           <button
             type="button"
@@ -615,10 +614,8 @@ function HistoryCard({
             onClick={onForget}
           >
             <TrashIcon />
-            Retirer de la liste
-            <TipPanel side="bottom">
-              Retire cette analyse de l’historique. Tes fichiers audio restent intacts.
-            </TipPanel>
+            {t("removeFromList")}
+            <TipPanel side="bottom">{t("removeLocalTip")}</TipPanel>
           </button>
         </footer>
       </article>
@@ -665,20 +662,24 @@ function folderName(path: string): string {
   return parts[parts.length - 1] || path;
 }
 
-function formatSavedAt(ts: number): string {
+function formatSavedAt(
+  ts: number,
+  loc: "en-US" | "fr-FR",
+  tc: (key: string, opts?: Record<string, unknown>) => string,
+): string {
   const delta = Date.now() - ts;
   if (delta < 60_000) {
-    return "à l’instant";
+    return tc("justNow");
   }
   if (delta < 3_600_000) {
     const m = Math.max(1, Math.round(delta / 60_000));
-    return `il y a ${m} min`;
+    return tc("minutesAgo", { count: m });
   }
   if (delta < 86_400_000) {
     const h = Math.max(1, Math.round(delta / 3_600_000));
-    return `il y a ${h} h`;
+    return tc("hoursAgo", { count: h });
   }
-  return new Date(ts).toLocaleString("fr-FR", {
+  return new Date(ts).toLocaleString(loc, {
     day: "numeric",
     month: "short",
     hour: "2-digit",

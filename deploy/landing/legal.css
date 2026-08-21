@@ -57,6 +57,9 @@ a:hover {
 }
 
 .top .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   color: var(--ink);
   text-decoration: none;
   font-family: var(--font-display);
@@ -64,6 +67,12 @@ a:hover {
   font-size: 1rem;
   letter-spacing: 0;
   text-transform: none;
+}
+
+.top .brand-mark {
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 0.35rem;
 }
 
 .top .brand span {
