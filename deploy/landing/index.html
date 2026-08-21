@@ -1,16 +1,16 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BassOrder â€” Sort Spotify &amp; local music by genre</title>
+    <title>BassOrder — From trash playlists to genre mastery</title>
     <meta
       name="description"
-      content="BassOrder is a Windows desktop app that sorts your Spotify playlists and local music library by genre â€” Rock, Jazz, Hip-Hop, Electro and more."
+      content="BassOrder — from trash playlists to genre mastery. Windows app that sorts Spotify playlists and local music by genre — Rock, Jazz, Hip-Hop, Electro and more."
     />
     <meta
       name="keywords"
-      content="BassOrder, sort music by genre, Spotify playlist organizer, local music library, music genre sorter, Windows music app"
+      content="BassOrder, from trash playlists to genre mastery, sort music by genre, Spotify playlist organizer, local music library, music genre sorter, Windows music app"
     />
     <meta name="author" content="Eliot Giraud" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
@@ -28,24 +28,24 @@
     <meta property="og:url" content="https://bassorder.smegg.cloud/" />
     <meta
       property="og:title"
-      content="BassOrder â€” Sort Spotify &amp; local music by genre"
+      content="BassOrder — From trash playlists to genre mastery"
     />
     <meta
       property="og:description"
-      content="Windows app that sorts Spotify playlists and local files into genre folders. Tweak the plan, then copy or move."
+      content="From trash playlists to genre mastery. Sort Spotify and local files into genre folders — tweak the plan, then copy or move."
     />
     <meta property="og:image" content="https://bassorder.smegg.cloud/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="BassOrder logo â€” sort your music by genre" />
+    <meta property="og:image:alt" content="BassOrder — from trash playlists to genre mastery" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta
       name="twitter:title"
-      content="BassOrder â€” Sort Spotify &amp; local music by genre"
+      content="BassOrder — From trash playlists to genre mastery"
     />
     <meta
       name="twitter:description"
-      content="Windows app that sorts Spotify playlists and local files into genre folders."
+      content="From trash playlists to genre mastery. Windows app for Spotify and local music."
     />
     <meta name="twitter:image" content="https://bassorder.smegg.cloud/og-image.png" />
     <script type="application/ld+json">
@@ -57,7 +57,8 @@
         "operatingSystem": "Windows",
         "url": "https://bassorder.smegg.cloud/",
         "image": "https://bassorder.smegg.cloud/og-image.png",
-        "description": "Desktop app that sorts Spotify playlists and local music files by genre.",
+        "slogan": "From trash playlists to genre mastery.",
+        "description": "From trash playlists to genre mastery. Desktop app that sorts Spotify playlists and local music files by genre.",
         "offers": {
           "@type": "Offer",
           "price": "0",
@@ -118,7 +119,7 @@
         color: inherit;
       }
 
-      /* â€”â€” Fixed immersive dÃ©cor â€”â€” */
+      /* —— Fixed immersive décor —— */
       .atmos {
         position: fixed;
         inset: 0;
@@ -265,7 +266,7 @@
         }
       }
 
-      /* â€”â€” App chrome flottant (dÃ©cor) â€”â€” */
+      /* —— App chrome flottant (décor) —— */
       .float-ui {
         position: fixed;
         inset: 0;
@@ -566,7 +567,7 @@
         margin-left: 0.15rem;
       }
 
-      /* Mini Preview Live â€” hero haut-droite (au-dessus du contenu) */
+      /* Mini Preview Live — hero haut-droite (au-dessus du contenu) */
       .fu-player {
         position: fixed;
         width: min(22rem, 38vw);
@@ -750,7 +751,7 @@
         z-index: 4;
       }
 
-      /* â€”â€” Hero â€”â€” */
+      /* —— Hero —— */
       .stage {
         position: relative;
         z-index: 4;
@@ -810,7 +811,9 @@
         font-size: clamp(1.35rem, 3.5vw, 1.9rem);
         letter-spacing: -0.03em;
         margin: 0 0 0.85rem;
-        max-width: 16ch;
+        max-width: 22ch;
+        font-style: italic;
+        color: color-mix(in srgb, var(--ink) 88%, var(--accent));
       }
       .lead {
         margin: 0 0 1.75rem;
@@ -872,7 +875,7 @@
         border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
       }
 
-      /* â€”â€” Sections plein Ã©cran â€”â€” */
+      /* —— Sections plein écran —— */
       section.block {
         position: relative;
         z-index: 4;
@@ -1063,7 +1066,7 @@
         max-width: none;
       }
 
-      /* â€”â€” Simu scan local â€”â€” */
+      /* —— Simu scan local —— */
       .sim {
         margin-top: 1.35rem;
         border-radius: 20px;
@@ -1715,7 +1718,7 @@
         color: var(--accent);
       }
 
-      /* â€”â€” Preview Live (calquÃ© app) â€”â€” */
+      /* —— Preview Live (calqué app) —— */
       .player-overlay {
         position: fixed;
         inset: 0;
@@ -2135,7 +2138,7 @@
           <i></i><i></i><i></i><i></i><i></i>
         </div>
         <div class="fu-player-meta">
-          <p class="kicker" id="heroPlayerFolder">Ã‰lectro</p>
+          <p class="kicker" id="heroPlayerFolder">Électro</p>
           <b id="heroPlayerTitle">Wake Me Up</b>
           <span id="heroPlayerArtist">Avicii</span>
         </div>
@@ -2155,13 +2158,13 @@
         <span id="heroPlayerDur">0:00</span>
       </div>
       <div class="fu-player-controls">
-        <button type="button" id="heroPlayerPrev" aria-label="PrÃ©cÃ©dent">â†</button>
+        <button type="button" id="heroPlayerPrev" aria-label="Précédent">←</button>
         <button type="button" class="is-play" id="heroPlayerPlay">Play</button>
-        <button type="button" id="heroPlayerNext" aria-label="Suivant">â†’</button>
+        <button type="button" id="heroPlayerNext" aria-label="Suivant">→</button>
       </div>
     </div>
 
-    <!-- DÃ©cor : fragments UI de lâ€™app -->
+    <!-- Décor : fragments UI de l’app -->
     <div class="float-ui" aria-hidden="true">
       <div class="fu-rail" data-drift data-amp="6" data-spd="0.28" style="left: 2.5%; top: 16%">
         <div class="fu-logo"></div>
@@ -2171,8 +2174,8 @@
         <div class="fu-nav"></div>
       </div>
 
-      <!-- Mini Preview Live â€” zone flÃ¨che (haut droite) -->
-      <!-- (dÃ©placÃ© hors float-ui pour les clics) -->
+      <!-- Mini Preview Live — zone flèche (haut droite) -->
+      <!-- (déplacé hors float-ui pour les clics) -->
 
       <span class="fu-chip" data-drift data-amp="10" data-spd="0.4" style="left: 48%; top: 12%">Rock</span>
       <span
@@ -2197,7 +2200,7 @@
         data-amp="11"
         data-spd="0.36"
         style="right: 8%; bottom: 38%"
-        >Ã‰lectro</span
+        >Électro</span
       >
       <span
         class="fu-chip t-gold"
@@ -2215,7 +2218,7 @@
         data-spd="0.27"
         style="left: 38%; top: 18%"
       >
-        Rechercher un titreâ€¦
+        Rechercher un titre…
       </div>
 
       <div
@@ -2227,7 +2230,7 @@
       >
         <div class="fu-ring" style="--p: 87"><span>87%</span></div>
         <div>
-          <b>ClassÃ©s</b>
+          <b>Classés</b>
           <em>14 / 16 titres</em>
         </div>
       </div>
@@ -2240,7 +2243,7 @@
         style="right: 28%; bottom: 30%"
       >
         <span class="is-on">Copier</span>
-        <span>DÃ©placer</span>
+        <span>Déplacer</span>
       </div>
 
       <div
@@ -2250,11 +2253,11 @@
         data-spd="0.29"
         style="left: 6%; top: 58%"
       >
-        <strong>DÃ©tection</strong>
+        <strong>Détection</strong>
         <ul style="margin: 0; padding: 0">
           <li>tags ID3 lus</li>
-          <li>genre suggÃ©rÃ©</li>
-          <li>plan prÃªt</li>
+          <li>genre suggéré</li>
+          <li>plan prêt</li>
         </ul>
       </div>
 
@@ -2281,21 +2284,21 @@
         </div>
       </div>
       <div class="fu-toast" data-drift data-amp="6" data-spd="0.25" style="right: 10%; bottom: 18%">
-        <strong>12 titres â†’ Jazz</strong>
-        <span>CorrigÃ© Â· prÃªt Ã  dÃ©placer</span>
+        <strong>12 titres → Jazz</strong>
+        <span>Corrigé · prêt à déplacer</span>
       </div>
       <div class="fu-card" data-drift data-amp="9" data-spd="0.33" style="left: 22%; top: 20%">
         <i></i>
         <div>
           <b>Night Bus</b>
-          <span>suggÃ©rÃ© Â· Ã‰lectro</span>
+          <span>suggéré · Électro</span>
         </div>
       </div>
       <div class="fu-card" data-drift data-amp="7" data-spd="0.37" style="right: 36%; top: 62%">
         <i style="background: linear-gradient(135deg, #ff6b6b, var(--gold))"></i>
         <div>
           <b>Glass Jaw</b>
-          <span>suggÃ©rÃ© Â· Rock</span>
+          <span>suggéré · Rock</span>
         </div>
       </div>
       <div class="fu-folder" data-drift data-amp="7" data-spd="0.29" style="right: 22%; top: 68%">
@@ -2326,13 +2329,13 @@
             />
             Bass<span>Order</span>
           </p>
-          <h1 class="tag">Sort playlists &amp; files by music genre</h1>
+          <h1 class="tag">From trash playlists to genre mastery.</h1>
           <p class="lead">
             <strong style="color: var(--ink)">BassOrder</strong> is a Windows
-            desktop app (Mac coming soon) that
-            <strong style="color: var(--ink)">sorts your music by genre</strong>
-            : Spotify likes / playlists and your local library â†’ Rock, Jazz,
-            Hip-Hop, Electro foldersâ€¦ You tweak as needed, then copy or move.
+            desktop app (Mac coming soon) that turns messy Spotify likes /
+            playlists and dumped local folders into
+            <strong style="color: var(--ink)">Rock, Jazz, Hip-Hop, Electro, Pop, Metal…</strong>
+            — you tweak the plan, then copy or move.
           </p>
           <div class="cta">
             <a
@@ -2345,9 +2348,9 @@
           <p class="fine">
             Also as
             <a href="/downloads/BassOrder_0.1.4_x64-setup.exe">.exe</a>
-            Â· macOS via
+            · macOS via
             <a href="https://github.com/EliotGIRAUD/BassOrder/releases">releases</a>
-            Â·
+            ·
             <a href="https://github.com/EliotGIRAUD/BassOrder">source code</a>
           </p>
         </div>
@@ -2355,14 +2358,14 @@
 
       <section class="block" id="comment">
         <div class="block-inner reveal">
-          <p class="kicker">What itâ€™s for</p>
-          <h2>An app to organize your music by genre</h2>
+          <p class="kicker">What it’s for</p>
+          <h2>From trash playlists to genre mastery</h2>
           <p>
-            Clear goal: take a
-            <strong>Spotify playlist</strong> (or a folder of files) and
-            <strong>sort it automatically by music genres</strong> â€” not a
-            social network, not a player. BassOrder detects / suggests the genre,
-            you confirm, then the app organizes.
+            Clear goal: take a chaotic
+            <strong>Spotify playlist</strong> (or a dumped folder of files) and
+            <strong>sort it by music genres</strong> — not a social network, not
+            a player. BassOrder detects / suggests the genre, you confirm, then
+            the app organizes.
           </p>
           <div class="fx-frame">
             <span class="spin-border" aria-hidden="true"></span>
@@ -2393,7 +2396,7 @@
                 <div>
                   <h3>Sort playlists &amp; files</h3>
                   <p>
-                    Genre suggestions â†’ corrections â†’
+                    Genre suggestions → corrections →
                     <strong>copy or move</strong> into genre folders.
                   </p>
                 </div>
@@ -2424,13 +2427,13 @@
           <p class="kicker">Try it here</p>
           <h2>Simulate a local scan</h2>
           <p>
-            The real BassOrder flow: pick a folder â†’ read the files â†’
+            The real BassOrder flow: pick a folder → read the files →
             folder plan by <strong>genre</strong>. Nothing is written to disk
             until you confirm in the app.
           </p>
           <div class="sim" id="simLocal">
             <div class="sim-head">
-              <span>My files Â· <strong>demo</strong></span>
+              <span>My files · <strong>demo</strong></span>
               <span id="simStatus">Ready</span>
             </div>
             <div class="sim-stage">
@@ -2450,7 +2453,8 @@
                   <h3>Local files module</h3>
                   <p>
                     Just like in the app: point to a music folder, BassOrder
-                    reads the tags and suggests a Rock / Jazz / Hip-Hop planâ€¦
+                    reads the tags and suggests a plan across Rock, Jazz,
+                    Hip-Hop, Pop, Metal, Soul and more…
                   </p>
                   <button type="button" class="btn btn-primary" id="simOpenPicker">
                     Choose a music folder
@@ -2532,7 +2536,7 @@
                     <p class="eyebrow">Disk scan</p>
                     <h3>Analyzing</h3>
                     <p class="sub">
-                      Nothing is written to disk â€” we only read
+                      Nothing is written to disk — we only read
                       metadata.
                     </p>
                     <div class="sim-term">
@@ -2540,7 +2544,7 @@
                       <div class="sim-term-body">
                         <p class="sim-term-line">
                           <span class="prompt">&gt;</span
-                          ><span id="simTermLine">Opening your folderâ€¦</span>
+                          ><span id="simTermLine">Opening your folder…</span>
                         </p>
                         <p class="sim-term-detail" id="simTermFile"></p>
                       </div>
@@ -2570,7 +2574,7 @@
                     </div>
                     <div>
                       <b>Folder plan</b>
-                      <span id="simPlanSummary">14 sorted Â· 2 uncategorized</span>
+                      <span id="simPlanSummary">37 sorted · 4 uncategorized</span>
                     </div>
                   </div>
                   <p class="sim-path" id="simRootPath">C:\Users\Alex\Music</p>
@@ -2610,20 +2614,21 @@
             <article class="panel">
               <span class="spin-border" aria-hidden="true"></span>
               <p class="kicker">Spotify</p>
-              <h3 class="panel-title">Spotify playlists â†’ genres</h3>
+              <h3 class="panel-title">Spotify playlists → genres</h3>
               <p>
                 Import likes / artists, build your dictionary, then sort
-                so your Spotify music is organized by genre â€” reusable on your
+                so your Spotify music is organized by genre — reusable on your
                 MP3s afterward.
               </p>
             </article>
             <article class="panel">
               <span class="spin-border" aria-hidden="true"></span>
               <p class="kicker">Local</p>
-              <h3 class="panel-title">Files â†’ folders by genre</h3>
+              <h3 class="panel-title">Files → folders by genre</h3>
               <p>
                 Scan a folder, fix suggestions, then copy or move into
-                Rock, Jazz, Hip-Hopâ€¦ from day one, even without Spotify.
+                Rock, Jazz, Hip-Hop, Pop, Metal, Soul… from day one, even
+                without Spotify.
               </p>
             </article>
           </div>
@@ -2632,13 +2637,13 @@
 
       <section class="block" id="download">
         <div class="block-inner reveal">
-          <p class="kicker">Vibe</p>
-          <h2>Built to sort playlists, not to administer</h2>
+          <p class="kicker">Brand</p>
+          <h2>From trash playlists to genre mastery</h2>
           <p>
-            BassOrder = sorting your music
-            <strong>by music genres</strong> (Spotify + local), history,
-            dictionary, optional knowledge sync. One user, one clear flow â€”
-            <strong>Spotify first</strong>, files always within reach.
+            That’s the whole point of BassOrder: turn the mess into a
+            <strong>genre-sorted library</strong> (Spotify + local), with
+            history, dictionary, and optional knowledge sync. One user, one clear
+            flow — <strong>Spotify first</strong>, files always within reach.
           </p>
           <div class="cta" style="margin-top: 1.75rem">
             <a
@@ -2657,14 +2662,14 @@
 
       <footer class="site">
         <div class="inner">
-          <span>BassOrder Â· Eliot GIRAUD Â· MIT</span>
+          <span>BassOrder · From trash playlists to genre mastery · Eliot GIRAUD · MIT</span>
           <span>
             <a href="/privacy.html">Privacy</a>
-            Â·
+            ·
             <a href="/terms.html">Terms</a>
-            Â·
+            ·
             <a href="/mentions.html">Legal notice</a>
-            Â·
+            ·
             <a href="https://github.com/EliotGIRAUD/BassOrder">GitHub</a>
           </span>
         </div>
@@ -2686,20 +2691,20 @@
             <div class="player-eq" id="playerEq" aria-hidden="true"></div>
           </div>
           <div class="player-info">
-            <p class="player-kicker" id="playerFolder">â€”</p>
-            <h3 id="playerTitle">â€”</h3>
-            <p class="player-artist" id="playerArtist">â€”</p>
+            <p class="player-kicker" id="playerFolder">—</p>
+            <h3 id="playerTitle">—</h3>
+            <p class="player-artist" id="playerArtist">—</p>
             <p class="player-error" id="playerError" hidden></p>
             <dl class="player-meta">
-              <div><dt>Album</dt><dd id="playerAlbum">â€”</dd></div>
-              <div><dt>Year</dt><dd id="playerYear">â€”</dd></div>
-              <div><dt>Genre</dt><dd id="playerGenre">â€”</dd></div>
-              <div><dt>BPM</dt><dd id="playerBpm">â€”</dd></div>
-              <div><dt>Key</dt><dd id="playerKey">â€”</dd></div>
-              <div><dt>Bitrate</dt><dd id="playerBitrate">â€”</dd></div>
-              <div><dt>Duration</dt><dd id="playerDurMeta">â€”</dd></div>
-              <div class="player-meta-wide"><dt>Track</dt><dd id="playerFile">â€”</dd></div>
-              <div class="player-meta-wide"><dt>Path</dt><dd id="playerPath">â€”</dd></div>
+              <div><dt>Album</dt><dd id="playerAlbum">—</dd></div>
+              <div><dt>Year</dt><dd id="playerYear">—</dd></div>
+              <div><dt>Genre</dt><dd id="playerGenre">—</dd></div>
+              <div><dt>BPM</dt><dd id="playerBpm">—</dd></div>
+              <div><dt>Key</dt><dd id="playerKey">—</dd></div>
+              <div><dt>Bitrate</dt><dd id="playerBitrate">—</dd></div>
+              <div><dt>Duration</dt><dd id="playerDurMeta">—</dd></div>
+              <div class="player-meta-wide"><dt>Track</dt><dd id="playerFile">—</dd></div>
+              <div class="player-meta-wide"><dt>Path</dt><dd id="playerPath">—</dd></div>
             </dl>
           </div>
         </div>
@@ -2715,12 +2720,12 @@
             <span class="player-vol-pct" id="playerVolPct">80%</span>
           </div>
           <div class="player-controls">
-            <button type="button" id="playerPrev">â† Prev.</button>
+            <button type="button" id="playerPrev">← Prev.</button>
             <button type="button" class="player-play" id="playerPlay">Play</button>
-            <button type="button" id="playerNext">Next â†’</button>
+            <button type="button" id="playerNext">Next →</button>
           </div>
           <p class="player-hint">
-            Space: play/pause Â· â†‘ â†“: volume Â· M: mute Â· Shift + â† â†’: tracks Â· Esc: close
+            Space: play/pause · ↑ ↓: volume · M: mute · Shift + ← →: tracks · Esc: close
           </p>
         </div>
       </div>

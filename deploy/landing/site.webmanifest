@@ -1,7 +1,7 @@
 {
   "name": "BassOrder",
   "short_name": "BassOrder",
-  "description": "Sort Spotify playlists and local music files by genre.",
+  "description": "From trash playlists to genre mastery. Sort Spotify and local music by genre.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",

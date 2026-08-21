@@ -1,7 +1,7 @@
 [package]
 name = "bassorder"
-version = "0.1.4"
-description = "BassOrder — trie ta musique Spotify et locale par genre"
+version = "0.1.5"
+description = "BassOrder — from trash playlists to genre mastery"
 authors = ["Eliot"]
 edition = "2021"
 

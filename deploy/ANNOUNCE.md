@@ -1,8 +1,13 @@
 # Brouillon de post — BassOrder
 
+**Tagline :** From trash playlists to genre mastery.  
+*(FR · Des playlists poubelle à la maîtrise du tri.)*
+
 ## LinkedIn / X (court)
 
-J’ai mis en ligne **BassOrder** : une app Windows pour trier sa musique par genre — Spotify et fichiers locaux.
+J’ai mis en ligne **BassOrder** — *from trash playlists to genre mastery*.
+
+App Windows pour trier sa musique par genre : Spotify et fichiers locaux.
 
 Stack : Tauri 2 + React + TypeScript, SQLite en local, et une API Rust self-host pour le compte cloud / sync de knowledge (miroir + pool).
 
@@ -14,7 +19,7 @@ Prochaine étape : simplifier le parcours utilisateur — aujourd’hui on se pe
 
 ## Version un peu plus longue
 
-BassOrder est né d’un vrai besoin : classer une bibliothèque musicale sans y passer des heures.
+BassOrder est né d’un vrai besoin : passer des playlists poubelle à une bibliothèque maîtrisée par genre — sans y passer des heures.
 
 L’app desktop (Tauri) lit Spotify et un dossier local, propose des genres, et laisse copier/déplacer les fichiers. Les données restent sur la machine (SQLite). En option, un compte cloud synchronise la « knowledge » (classements artistes) via une API que j’héberge moi-même sur mon VPS.
 
