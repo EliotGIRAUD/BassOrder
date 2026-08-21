@@ -27,5 +27,7 @@ docker run --rm \
          cp -a /data/bassorder.db-shm /backup/bassorder-$STAMP.db-shm 2>/dev/null || true"
 
 chmod 600 "$OUT"
+chmod 600 "$BACKUP_DIR"/bassorder-"$STAMP".db-wal 2>/dev/null || true
+chmod 600 "$BACKUP_DIR"/bassorder-"$STAMP".db-shm 2>/dev/null || true
 find "$BACKUP_DIR" -name 'bassorder-*' -mtime +"$KEEP_DAYS" -delete
 echo "OK $OUT"
