@@ -35,17 +35,24 @@ sshd -t
 systemctl reload ssh || systemctl reload sshd
 
 echo "==> Fail2ban"
-systemctl enable --now fail2ban
+# Debian journald : pas de /var/log/auth.log → backend systemd
 cat >/etc/fail2ban/jail.d/bassorder-sshd.conf <<'EOF'
+[DEFAULT]
+backend = systemd
+
 [sshd]
 enabled = true
 port = ssh
 filter = sshd
+backend = systemd
 maxretry = 4
 findtime = 10m
 bantime = 1h
 EOF
+systemctl enable fail2ban
 systemctl restart fail2ban
+sleep 1
+fail2ban-client status sshd | head -20
 
 echo "==> UFW (22/80/443) — ne coupe pas la session courante"
 ufw default deny incoming
