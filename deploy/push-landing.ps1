@@ -28,6 +28,13 @@ $files = @(
   "site.webmanifest"
 )
 
+# Google Search Console ownership proof (keep after validation)
+$googleVerify = Get-ChildItem -LiteralPath $LocalLanding -Filter "google*.html" -File -ErrorAction SilentlyContinue |
+  Select-Object -ExpandProperty Name
+if ($googleVerify) {
+  $files += $googleVerify
+}
+
 foreach ($name in $files) {
   $src = Join-Path $LocalLanding $name
   if (-not (Test-Path -LiteralPath $src)) {
