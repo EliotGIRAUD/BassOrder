@@ -1,6 +1,12 @@
-# BassOrder
+<p align="center">
+  <img src="assets/logo.png" alt="BassOrder" width="128" />
+</p>
 
-Sort your music by genre — **Spotify** and **local library**, two independent modules.
+<h1 align="center">BassOrder</h1>
+
+<p align="center">
+  Sort your music by genre — <strong>Spotify</strong> and <strong>local library</strong>, two independent modules.
+</p>
 
 **Download (Windows)**: [bassorder.smegg.cloud](https://bassorder.smegg.cloud)  
 **Cloud API**: [api.bassorder.smegg.cloud](https://api.bassorder.smegg.cloud) · `GET /health`  
