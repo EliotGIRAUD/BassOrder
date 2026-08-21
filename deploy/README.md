@@ -31,7 +31,9 @@ Puis uploader l’installateur Windows vers `/var/www/bassorder/downloads/`.
 - `docker-compose.yml` — API Rust + volume SQLite (non-root, caps drop)
 - `nginx/*.conf` — vhosts (+ snippets headers / rate-limit)
 - `harden-vps.sh` — firewall, fail2ban, SSH, nginx sécu, backups
+- `harden-localhost-binds.sh` — MySQL + SMEGG (PM2) en 127.0.0.1 only
 - `backup-sqlite.sh` — dump quotidien volume SQLite
+- `pull-backups.ps1` — récupère les backups sur ton PC (hors VPS)
 - `landing/` — page de téléchargement
 - `.env.example` — modèle secret JWT
 
@@ -40,4 +42,10 @@ Après un déploiement existant :
 ```bash
 cd /opt/bassorder && git pull
 bash deploy/harden-vps.sh
+```
+
+Backups sur ton PC (PowerShell) :
+
+```powershell
+.\deploy\pull-backups.ps1
 ```

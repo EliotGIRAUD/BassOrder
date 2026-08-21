@@ -221,5 +221,9 @@ sleep 3
 curl -fsS http://127.0.0.1:8787/health
 curl -fsSI https://api.bassorder.smegg.cloud/health | head -15 || true
 
+echo "==> Bind MySQL / SMEGG en localhost + server_tokens"
+bash "$DEPLOY/harden-localhost-binds.sh"
+
 echo "==> DONE harden-vps"
 echo "Vérifs : ufw status ; fail2ban-client status sshd ; docker port bassorder-api"
+echo "Pull backups PC : deploy/pull-backups.ps1"
