@@ -18,6 +18,7 @@ $files = @(
   "terms.html",
   "privacy.html",
   "mentions.html",
+  "changelog.html",
   "favicon.ico",
   "favicon.png",
   "logo.svg",

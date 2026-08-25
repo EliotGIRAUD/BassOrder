@@ -1,6 +1,6 @@
 [package]
 name = "bassorder"
-version = "0.1.6"
+version = "0.1.7"
 description = "BassOrder — from trash playlists to genre mastery"
 authors = ["Eliot"]
 edition = "2021"

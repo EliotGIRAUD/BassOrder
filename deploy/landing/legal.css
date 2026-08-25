@@ -166,3 +166,109 @@ code {
   font-size: 0.88em;
   color: var(--accent);
 }
+
+/* -- Patch notes -- */
+.release {
+  margin: 0 0 1.75rem;
+  padding: 1.25rem 1.2rem 1.15rem;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.release.is-latest {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  background:
+    radial-gradient(ellipse 80% 70% at 0% 0%, rgba(125, 255, 212, 0.08), transparent 55%),
+    rgba(255, 255, 255, 0.03);
+}
+
+.release-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 0.85rem;
+  margin-bottom: 0.65rem;
+}
+
+.release h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.release h2 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.release h2 a:hover {
+  color: var(--accent);
+}
+
+.release-date {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--accent);
+}
+
+.release-lede {
+  margin: 0 0 0.85rem;
+  font-size: 0.98rem;
+}
+
+.release ul {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.release li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem 0.65rem;
+}
+
+.release li + li {
+  margin-top: 0.5rem;
+}
+
+.kind {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  min-width: 5.2rem;
+  color: var(--muted);
+}
+
+.kind-new {
+  color: var(--accent);
+}
+
+.kind-improved {
+  color: #8ab4ff;
+}
+
+.kind-fixed {
+  color: #e4c391;
+}
+
+.kind-site {
+  color: #c4b8a8;
+}

@@ -3,14 +3,17 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const pngPath = path.join(root, "src-tauri", "icons", "icon.png");
-const png = fs.readFileSync(pngPath);
-const b64 = png.toString("base64");
+const logoSvg = path.join(root, "assets", "logo.svg");
+const iconPng = path.join(root, "src-tauri", "icons", "icon.png");
+const iconIco = path.join(root, "src-tauri", "icons", "icon.ico");
+const appleSrc = path.join(root, "src-tauri", "icons", "128x128.png");
 
-const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="BassOrder">
-  <image href="data:image/png;base64,${b64}" width="512" height="512"/>
-</svg>
-`;
+if (!fs.existsSync(logoSvg)) {
+  throw new Error(`Missing ${logoSvg}`);
+}
+if (!fs.existsSync(iconPng)) {
+  throw new Error(`Missing ${iconPng} — run: pnpm tauri icon assets/logo.svg`);
+}
 
 const targets = [
   path.join(root, "deploy", "landing"),
@@ -19,18 +22,14 @@ const targets = [
 
 for (const dir of targets) {
   fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, "logo.svg"), svg);
-  fs.copyFileSync(pngPath, path.join(dir, "favicon.png"));
-  fs.copyFileSync(
-    path.join(root, "src-tauri", "icons", "icon.ico"),
-    path.join(dir, "favicon.ico"),
-  );
-  fs.copyFileSync(
-    path.join(root, "src-tauri", "icons", "128x128.png"),
-    path.join(dir, "apple-touch-icon.png"),
-  );
+  fs.copyFileSync(logoSvg, path.join(dir, "logo.svg"));
+  fs.copyFileSync(iconPng, path.join(dir, "favicon.png"));
+  fs.copyFileSync(iconIco, path.join(dir, "favicon.ico"));
+  fs.copyFileSync(appleSrc, path.join(dir, "apple-touch-icon.png"));
   // Fallback OG until a dedicated 1200x630 is available.
-  fs.copyFileSync(pngPath, path.join(dir, "og-image.png"));
+  fs.copyFileSync(iconPng, path.join(dir, "og-image.png"));
 }
 
-console.log("SEO brand assets written to deploy/landing and public");
+fs.copyFileSync(iconPng, path.join(root, "assets", "logo.png"));
+
+console.log("SEO brand assets written to deploy/landing, public, and assets/logo.png");
