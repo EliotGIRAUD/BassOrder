@@ -93,6 +93,7 @@ async fn main() {
         .route("/auth/refresh", post(auth::refresh))
         .route("/auth/logout", post(auth::logout))
         .route("/auth/me", get(auth::me))
+        .route("/auth/delete", post(auth::delete_account))
         .route("/auth/oauth/{provider}/start", get(auth::oauth_start))
         .route(
             "/auth/oauth/{provider}/callback",

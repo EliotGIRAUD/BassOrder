@@ -58,6 +58,7 @@ pub fn run() {
             knowledge::knowledge_group_artists,
             cloud_knowledge::knowledge_cloud_sync,
             cloud_knowledge::cloud_logout,
+            cloud_knowledge::cloud_delete_account,
             spotify::spotify_status,
             spotify::spotify_status_summary,
             spotify::spotify_resume_session,

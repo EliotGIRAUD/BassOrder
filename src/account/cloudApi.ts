@@ -174,6 +174,21 @@ export async function cloudMe(accessToken: string): Promise<CloudMe> {
   return api("/auth/me", { token: accessToken });
 }
 
+/** Suppression définitive du compte cloud (RGPD). */
+export async function cloudDeleteAccount(
+  accessToken: string,
+  opts?: { password?: string },
+): Promise<void> {
+  await api("/auth/delete", {
+    method: "POST",
+    token: accessToken,
+    body: JSON.stringify({
+      confirm: "DELETE",
+      password: opts?.password,
+    }),
+  });
+}
+
 /** Push miroir knowledge (artistes classés). */
 export async function cloudKnowledgePush(
   accessToken: string,

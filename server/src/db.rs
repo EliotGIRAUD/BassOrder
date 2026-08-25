@@ -136,6 +136,16 @@ impl Db {
         })
     }
 
+    /// Supprime le compte et tout le lié (CASCADE : tokens, OAuth, miroirs knowledge).
+    pub fn delete_account(&self, account_id: &str) -> ApiResult<bool> {
+        self.with(|conn| {
+            let n = conn
+                .execute("DELETE FROM accounts WHERE id = ?1", [account_id])
+                .map_err(|e| ApiError::Internal(e.to_string()))?;
+            Ok(n > 0)
+        })
+    }
+
     pub fn store_refresh(&self, id: &str, account_id: &str, token_hash: &str, expires_at: i64) -> ApiResult<()> {
         self.with(|conn| {
             conn.execute(

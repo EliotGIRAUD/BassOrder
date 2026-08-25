@@ -136,3 +136,15 @@ export async function cloudDisconnect(userId: string): Promise<void> {
   if (!isTauri()) return;
   await invokeDb("cloud_logout", { userId });
 }
+
+/** Suppression définitive du compte cloud (serveur) + lien local. */
+export async function deleteLinkedCloudAccount(
+  userId: string,
+  password?: string,
+): Promise<void> {
+  if (!isTauri()) return;
+  await invokeDb("cloud_delete_account", {
+    userId,
+    password: password ?? null,
+  });
+}

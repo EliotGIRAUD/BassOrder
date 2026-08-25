@@ -9,6 +9,7 @@ import {
   cloudDisconnect,
   deleteAccountPreset,
   deleteFavorite,
+  deleteLinkedCloudAccount,
   getCloudLink,
   listAccountPresets,
   listFavorites,
@@ -52,6 +53,8 @@ export function SpaceAccountPanels() {
   const [busy, setBusy] = useState(false);
   const [apiOk, setApiOk] = useState<boolean | null>(null);
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
 
   const reload = useCallback(async () => {
     if (!user) return;
@@ -153,10 +156,48 @@ export function SpaceAccountPanels() {
         await clearCloudLink(user.id);
       }
       setLink(null);
+      setConfirmDelete(false);
+      setDeletePassword("");
       fx.toast({
         kind: "ok",
         title: t("toastCloudDisconnected"),
         body: t("toastCloudDisconnectedBody"),
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onCloudDeleteAccount() {
+    if (!user || !link || busy) return;
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
+    if (!deletePassword.trim()) {
+      fx.toast({
+        kind: "warn",
+        title: t("toastDeleteNeedPassword"),
+        body: t("toastDeleteNeedPasswordBody"),
+      });
+      return;
+    }
+    setBusy(true);
+    try {
+      await deleteLinkedCloudAccount(user.id, deletePassword);
+      setLink(null);
+      setConfirmDelete(false);
+      setDeletePassword("");
+      fx.toast({
+        kind: "ok",
+        title: t("toastAccountDeleted"),
+        body: t("toastAccountDeletedBody"),
+      });
+    } catch (err) {
+      fx.toast({
+        kind: "warn",
+        title: t("toastDeleteFailed"),
+        body: err instanceof Error ? err.message : String(err),
       });
     } finally {
       setBusy(false);
@@ -349,6 +390,44 @@ export function SpaceAccountPanels() {
                 >
                   {t("disconnectCloud")}
                 </button>
+              </div>
+              <div className="account-cloud-danger">
+                <p className="account-hint">{t("deleteAccountHint")}</p>
+                {confirmDelete && (
+                  <label>
+                    <span>{t("deleteAccountPassword")}</span>
+                    <input
+                      type="password"
+                      value={deletePassword}
+                      onChange={(e) => setDeletePassword(e.target.value)}
+                      autoComplete="current-password"
+                      disabled={busy}
+                    />
+                  </label>
+                )}
+                <div className="account-cloud-actions">
+                  <button
+                    type="button"
+                    className={`btn-ghost profile-danger${confirmDelete ? " is-confirm" : ""}`}
+                    disabled={busy}
+                    onClick={() => void onCloudDeleteAccount()}
+                  >
+                    {confirmDelete ? t("confirmDeleteAccount") : t("deleteAccount")}
+                  </button>
+                  {confirmDelete && (
+                    <button
+                      type="button"
+                      className="btn-ghost"
+                      disabled={busy}
+                      onClick={() => {
+                        setConfirmDelete(false);
+                        setDeletePassword("");
+                      }}
+                    >
+                      {t("cancelDelete")}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ) : (

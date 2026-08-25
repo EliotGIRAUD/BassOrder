@@ -27,6 +27,7 @@ Listen: `http://127.0.0.1:8787`
 | POST | `/auth/refresh` | `{ refreshToken }` |
 | POST | `/auth/logout` | revoke refresh |
 | GET | `/auth/me` | Bearer access |
+| POST | `/auth/delete` | Bearer + `{ confirm: "DELETE", password? }` — erase account + knowledge mirror |
 | GET | `/auth/oauth/:provider/start` | OAuth stub |
 | PUT | `/knowledge/mirror` | Bearer — push private mirror (`profileId` + classified artists) |
 | GET | `/knowledge/mirror?profileId=` | Bearer — restore your mirror |

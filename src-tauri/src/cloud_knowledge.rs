@@ -309,6 +309,58 @@ pub async fn cloud_logout(app: AppHandle, user_id: String) -> Result<(), String>
     db::db_clear_cloud_link(app, state, user_id)
 }
 
+/// Suppression définitive du compte cloud (serveur) + purge du lien local.
+#[tauri::command]
+pub async fn cloud_delete_account(
+    app: AppHandle,
+    user_id: String,
+    password: Option<String>,
+) -> Result<(), String> {
+    let (api_base_url, access_token) = {
+        let state = app.state::<DbState>();
+        session_guard::require_session_unlocked(&app, &state, &user_id)?;
+
+        let creds = db::load_cloud_creds(&state, &user_id)?
+            .ok_or_else(|| "Aucun compte cloud lié.".to_string())?;
+        if creds.access_token.is_empty() {
+            return Err("Session cloud expirée — reconnecte-toi puis réessaie.".into());
+        }
+        (creds.api_base_url, creds.access_token)
+    };
+
+    let mut body = json!({ "confirm": "DELETE" });
+    if let Some(pw) = password.filter(|s| !s.is_empty()) {
+        body["password"] = json!(pw);
+    }
+
+    let res = http_client()
+        .post(format!("{}/auth/delete", api_base_url))
+        .header("Authorization", format!("Bearer {access_token}"))
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| format!("Suppression cloud impossible: {e}"))?;
+
+    if !res.status().is_success() {
+        let status = res.status();
+        let message = res
+            .json::<serde_json::Value>()
+            .await
+            .ok()
+            .and_then(|v| {
+                v.get("error")
+                    .and_then(|e| e.as_str())
+                    .map(|s| s.to_string())
+            })
+            .unwrap_or_else(|| format!("HTTP {status}"));
+        return Err(message);
+    }
+
+    let state_app = app.clone();
+    let state = state_app.state::<DbState>();
+    db::db_clear_cloud_link(app, state, user_id)
+}
+
 /// Best-effort après sync Spotify (ignore si pas de cloud).
 pub async fn maybe_push_after_local_save(app: &AppHandle) {
     let state = app.state::<DbState>();

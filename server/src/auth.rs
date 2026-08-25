@@ -313,6 +313,47 @@ pub async fn me(State(state): State<AppState>, headers: HeaderMap) -> ApiResult<
     }))
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteAccountBody {
+    /// Doit être exactement `DELETE`.
+    pub confirm: String,
+    /// Requis si le compte a un mot de passe (email/password).
+    pub password: Option<String>,
+}
+
+/// Suppression définitive du compte cloud (RGPD) + miroir knowledge.
+pub async fn delete_account(
+    State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    Json(body): Json<DeleteAccountBody>,
+) -> ApiResult<impl IntoResponse> {
+    if body.confirm.trim() != "DELETE" {
+        return Err(ApiError::BadRequest(
+            "Confirmation invalide — envoie confirm: \"DELETE\".".into(),
+        ));
+    }
+    let account = require_account(&state, &headers)?;
+    enforce_auth_limit(&state, Some(addr), &headers, &account.email)?;
+
+    if let Some(hash) = account.password_hash.as_deref() {
+        let password = body
+            .password
+            .as_deref()
+            .ok_or_else(|| ApiError::BadRequest("Mot de passe requis.".into()))?;
+        if !verify_password(password, hash)? {
+            return Err(ApiError::Unauthorized("Identifiants incorrects.".into()));
+        }
+    }
+
+    if !state.db.delete_account(&account.id)? {
+        return Err(ApiError::NotFound("Compte introuvable.".into()));
+    }
+    tracing::info!(account_id = %account.id, "compte cloud supprimé");
+    Ok(axum::http::StatusCode::NO_CONTENT)
+}
+
 fn oauth_configured(provider: &str) -> bool {
     let (id_key, secret_key) = match provider {
         "google" => ("BASSORDER_GOOGLE_CLIENT_ID", "BASSORDER_GOOGLE_CLIENT_SECRET"),
