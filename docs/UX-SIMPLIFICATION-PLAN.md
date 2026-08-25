@@ -1,15 +1,16 @@
 # Méga-plan — Parcours utilisateur, profils & Mac
 
-Statut : **décisions produit verrouillées** (2026-08-21).  
-Prochaine étape : implémentation par phases.
+Statut : **décisions produit mises à jour** (2026-08-25).  
+Parcours premier user : **dossier d’abord**, Spotify en un clic ensuite.
 
 ## Décisions verrouillées
 
 | Sujet | Décision |
 |---|---|
 | Utilisateurs machine | **Un seul utilisateur par install** — plus de gate Netflix multi-pseudos |
-| Premier parcours | **Spotify d’abord** (élargir le dictionnaire + pool cloud si sync) |
-| Local dès le début | **Oui, accessible** (pas bloqué) — pour scanner / voir l’évolution sans attendre Spotify |
+| Premier parcours | **Dossier d’abord** (Mes fichiers) — Spotify ensuite pour enrichir le dictionnaire |
+| Local dès le début | **Oui** — atterrissage J1, CTA dans l’empty state |
+| Spotify | **Un bouton « Se connecter »** (Client ID bundle) ; checklist / multi-comptes en Avancé |
 | macOS | **Oui** — via CI GitHub Actions (pas besoin de Mac perso au quotidien) |
 | Linux | Plus tard (pas prioritaire) |
 
@@ -17,8 +18,8 @@ Prochaine étape : implémentation par phases.
 
 ## Diagnostic (rappel)
 
-Aujourd’hui : plusieurs « moi » (espace local, PIN, N comptes Spotify, cloud, presets) + pas d’onboarding.  
-Cible : un mental model **une personne · un compte Spotify · cloud optionnel · local toujours là**.
+Avant : pas d’onboarding, accueil à 2 cartes égales, Spotify bloqué par un setup Developer (Client ID).  
+Cible : **une personne · un dossier dès J1 · un compte Spotify en un clic · cloud optionnel**.
 
 ---
 
@@ -28,19 +29,19 @@ Cible : un mental model **une personne · un compte Spotify · cloud optionnel �
 flowchart TD
   Install[Install Windows ou Mac]
   First[Premier lancement]
-  Wizard[Wizard: connecter Spotify]
-  Home[Accueil]
-  Spotify[Module Spotify]
-  Local[Module Local]
+  Gate[Pseudo une fois]
+  Local[Mes fichiers]
+  Home[Accueil guidé]
+  Spotify[Connecter Spotify un clic]
   Space[Mon espace]
 
   Install --> First
-  First --> Wizard
-  Wizard -->|OAuth OK ou Skip| Home
-  Home --> Spotify
-  Home --> Local
-  Home --> Space
+  First --> Gate
+  Gate --> Local
+  Local -->|après scan| Home
+  Home -->|nudge si dico vide| Spotify
   Spotify -->|knowledge| Local
+  Home --> Space
 ```
 
 ### Vocabulaire
@@ -52,13 +53,14 @@ flowchart TD
 | Page Compte + Page Profil | **Une seule page : Mon espace** |
 | Gate multi-users | **Supprimée** (ou réduite à PIN si défini) |
 
-### Wizard (max 3 écrans)
+### Premier lancement
 
-1. Bienvenue BassOrder  
-2. **Connecter Spotify** (CTA principal) + lien secondaire « Plus tard »  
-3. Optionnel : PIN / cloud (skippable) → Accueil  
+1. Gate : pseudo + couleur (une fois)  
+2. Atterrissage **Mes fichiers** — CTA **Choisir un dossier** dans l’empty  
+3. Après scan : accueil guidé (une étape recommandée) + nudge Spotify si pas encore connecté  
+4. Spotify : bouton unique (OAuth PKCE). Client ID perso / multi-comptes dans **Avancé**
 
-Sur l’accueil : Spotify mis en avant, **Mes fichiers** visible dès le jour 1.
+Rail : historiques masqués tant qu’ils sont vides.
 
 ### Mon espace (fusion)
 
@@ -67,6 +69,12 @@ Sur l’accueil : Spotify mis en avant, **Mes fichiers** visible dès le jour 1.
 - Compte cloud optionnel (replié)  
 - Compte Spotify (lien / déconnexion)  
 - Plus de switch user / créer un 2ᵉ profil machine  
+
+### Spotify — app partagée
+
+- Client ID lu depuis `VITE_SPOTIFY_CLIENT_ID` (`.env` local, secret CI)  
+- Redirect URI : `http://127.0.0.1:41821/callback` et `http://127.0.0.1:41822/callback`  
+- Mode Development Spotify : ~25 comptes dans User Management jusqu’à Quota Extension  
 
 ### Données
 
@@ -105,6 +113,7 @@ Fichier `/.github/workflows/release.yml` :
 - trigger : `v*` tags  
 - jobs : `windows` (déjà local) + `macos`  
 - publish release assets  
+- secret `VITE_SPOTIFY_CLIENT_ID` pour le bouton unique dans les installers  
 
 ---
 
@@ -112,19 +121,20 @@ Fichier `/.github/workflows/release.yml` :
 
 | Phase | Contenu | Effort | Statut |
 |---|---|---|---|
-| **P0** | Copy / rename UI (Espace, Compte Spotify) | S | à faire |
+| **P0** | Copy / rename UI (Espace, Compte Spotify) | S | partiel (Mon espace) |
 | **P1** | Single-user : retirer gate multi + migration last-user | M | **fait** |
-| **P2** | Wizard Spotify-first + Local accessible | M | à faire |
-| **P3** | Fusion Profil+Compte → Mon espace | M | à faire |
-| **P4** | Spotify 1 compte défaut ; multi en Avancé | S–M | à faire |
+| **P2** | First-run Local + accueil guidé | M | **fait** |
+| **P3** | Fusion Profil+Compte → Mon espace | M | **fait** |
+| **P4** | Spotify 1 clic (ID bundle) ; multi en Avancé | S–M | **fait** |
 | **P5** | CI macOS + landing Mac + upload VPS | M | **CI faite** (unsigned) ; artefacts via Actions |
-| **P6** | Empty states / tooltips parcours | S | à faire |
+| **P6** | Empty states / nudge parcours | S | **fait** (Local CTA + nudge Spotify) |
 
 ---
 
 ## Critères de succès
 
-- Nouveau user : Spotify connecté (ou skip) en **&lt; 2 min** sans lire de doc  
+- Nouveau user : dossier choisi en **&lt; 2 min** sans lire de doc  
+- Spotify : un bouton, pas de Client ID à coller (si `.env` / secret CI renseigné)  
 - Zéro écran « Qui écoute ? » multi-cartes  
 - Dictionnaire grossit via Spotify ; Local utilisable immédiatement  
 - Landing : Windows + Mac avec liens réels  
@@ -133,4 +143,4 @@ Fichier `/.github/workflows/release.yml` :
 
 - Linux  
 - Signature / notarisation Apple payante  
-- Refonte totale du Client ID Spotify Developer (peut s’insérer en P4 si on a une app Spotify partagée)
+- Quota Extension Spotify (démarche dashboard, pas du code)

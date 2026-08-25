@@ -42,11 +42,8 @@ import { VirtualList } from "../ui/VirtualList";
 import { ArtistListSkeleton, SpotifyBootSkeleton } from "../ui/skeleton";
 import { TipPanel } from "../ui/AppTip";
 import { useUserSession } from "../users/UserSession";
-
-function isValidSpotifyClientId(value: string): boolean {
-  const id = value.trim();
-  return id.length >= 16 && id.length <= 64 && /^[0-9a-fA-F]+$/.test(id);
-}
+import { isValidSpotifyClientId, readBundledClientId } from "./bundledClientId";
+import { markFirstRunDone } from "../onboarding/firstRun";
 
 function avatarOfferKey(userId: string, avatarUrl: string): string {
   return `bassorder.avatarOffer.v1:${userId}:${avatarUrl}`;
@@ -75,7 +72,15 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
   const tauri = isTauri();
   const fx = useExperience();
   const { user, setAvatar } = useUserSession();
-  const [clientId, setClientId] = useState(readStoredClientId);
+  const bundledId = readBundledClientId();
+  const hasBundledId = Boolean(bundledId);
+  const [clientId, setClientId] = useState(() => {
+    const stored = readStoredClientId();
+    if (isValidSpotifyClientId(stored)) {
+      return stored;
+    }
+    return bundledId;
+  });
   const [profileName, setProfileName] = useState(
     () => getActiveProfile()?.name ?? "",
   );
@@ -148,6 +153,7 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
     invalidateKnowledgeCache();
     refreshProfiles();
     notifyImportsChanged();
+    markFirstRunDone(userRef.current?.id);
   }
 
   useEffect(() => {
@@ -399,7 +405,10 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
 
   async function connect() {
     setError(null);
-    if (!isValidSpotifyClientId(clientId)) {
+    const id = isValidSpotifyClientId(clientId)
+      ? clientId.trim()
+      : bundledId;
+    if (!isValidSpotifyClientId(id)) {
       setError(t("invalidClientId"));
       fx.toast({
         kind: "warn",
@@ -408,10 +417,13 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
       });
       return;
     }
+    if (id !== clientId) {
+      setClientId(id);
+    }
     setBusy("connect");
     const saved = rememberProfile(
       profileName || status?.knowledge.displayName || "Spotify",
-      clientId,
+      id,
     );
     refreshProfiles();
     try {
@@ -433,10 +445,10 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
         : t("toastConnectingAuth"),
     });
     try {
-      const next = await spotifyConnect(clientId);
+      const next = await spotifyConnect(id);
       setStatus(next);
       if (next.knowledge.displayName || next.avatarUrl) {
-        rememberProfile(profileName || next.knowledge.displayName || "Spotify", clientId, {
+        rememberProfile(profileName || next.knowledge.displayName || "Spotify", id, {
           displayName: next.knowledge.displayName,
           avatarUrl: next.avatarUrl ?? null,
         });
@@ -651,6 +663,12 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
                 })}
               </p>
             </>
+          ) : hasBundledId ? (
+            <>
+              <p className="eyebrow">{t("connectSimpleEyebrow")}</p>
+              <h3>{t("connectSimpleTitle")}</h3>
+              <p>{t("connectSimpleBody")}</p>
+            </>
           ) : (
             <>
               <p className="eyebrow">{t("step1Eyebrow")}</p>
@@ -664,71 +682,50 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
               </ol>
             </>
           )}
-          <div className="spotify-profiles">
-            <label className="spotify-client">
-              <span>{t("savedProfiles")}</span>
-              <select
-                value={activeProfileId}
-                onChange={(e) => onPickProfile(e.target.value)}
-              >
-                <option value="">{t("newFree")}</option>
-                {profiles.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} · {maskId(p.clientId)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="spotify-client">
-              <span>{t("profileName")}</span>
-              <input
-                type="text"
-                value={profileName}
-                autoComplete="off"
-                placeholder={t("profileNamePlaceholder")}
-                onChange={(e) => setProfileName(e.target.value)}
-              />
-            </label>
-            <label className="spotify-client">
-              <span>{t("clientId")}</span>
-              <input
-                type="text"
-                value={clientId}
-                autoComplete="off"
-                spellCheck={false}
-                placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                onChange={(e) => {
-                  setClientId(e.target.value);
-                  storeClientId(e.target.value);
+          {hasBundledId ? (
+            <details className="spotify-advanced">
+              <summary>{t("advancedToggle")}</summary>
+              <SpotifyAdvancedFields
+                t={t}
+                activeProfileId={activeProfileId}
+                profiles={profiles}
+                profileName={profileName}
+                clientId={clientId}
+                onPickProfile={onPickProfile}
+                onProfileName={setProfileName}
+                onClientId={(value) => {
+                  setClientId(value);
+                  storeClientId(value);
                 }}
+                onSaveProfile={onSaveProfile}
+                onDeleteProfile={onDeleteProfile}
               />
-            </label>
-            <div className="spotify-profile-actions">
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={onSaveProfile}
-                disabled={!isValidSpotifyClientId(clientId)}
-                title={t("saveProfileTitle")}
-              >
-                {t("saveProfile")}
-              </button>
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={onDeleteProfile}
-                disabled={!activeProfileId}
-                title={t("deleteProfileTitle")}
-              >
-                {t("deleteProfile")}
-              </button>
-            </div>
-          </div>
+            </details>
+          ) : (
+            <SpotifyAdvancedFields
+              t={t}
+              activeProfileId={activeProfileId}
+              profiles={profiles}
+              profileName={profileName}
+              clientId={clientId}
+              onPickProfile={onPickProfile}
+              onProfileName={setProfileName}
+              onClientId={(value) => {
+                setClientId(value);
+                storeClientId(value);
+              }}
+              onSaveProfile={onSaveProfile}
+              onDeleteProfile={onDeleteProfile}
+            />
+          )}
           <button
             type="button"
             className="btn-accent"
             onClick={() => void connect()}
-            disabled={busy !== null || !isValidSpotifyClientId(clientId)}
+            disabled={
+              busy !== null ||
+              !(isValidSpotifyClientId(clientId) || hasBundledId)
+            }
             title={t("connectTitle")}
           >
             {busy === "connect"
@@ -737,7 +734,9 @@ export function SpotifyModule({ live = true }: { live?: boolean }) {
                 ? t("connectImporting")
                 : status.hasStoredAuth || (activeProfile?.likedCount ?? 0) > 0
                   ? t("connectResume")
-                  : t("connectImport")}
+                  : hasBundledId
+                    ? t("connectOneClick")
+                    : t("connectImport")}
           </button>
         </div>
       )}
@@ -958,6 +957,90 @@ function SpotifyMetric({ label, value }: { label: string; value: number }) {
         <CountUp value={value} />
       </span>
       <span className="kpi-label">{label}</span>
+    </div>
+  );
+}
+
+function SpotifyAdvancedFields({
+  t,
+  activeProfileId,
+  profiles,
+  profileName,
+  clientId,
+  onPickProfile,
+  onProfileName,
+  onClientId,
+  onSaveProfile,
+  onDeleteProfile,
+}: {
+  t: (key: string, opts?: Record<string, string>) => string;
+  activeProfileId: string;
+  profiles: SpotifyProfile[];
+  profileName: string;
+  clientId: string;
+  onPickProfile: (id: string) => void;
+  onProfileName: (value: string) => void;
+  onClientId: (value: string) => void;
+  onSaveProfile: () => void;
+  onDeleteProfile: () => void;
+}) {
+  return (
+    <div className="spotify-profiles">
+      <label className="spotify-client">
+        <span>{t("savedProfiles")}</span>
+        <select
+          value={activeProfileId}
+          onChange={(e) => onPickProfile(e.target.value)}
+        >
+          <option value="">{t("newFree")}</option>
+          {profiles.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name} · {maskId(p.clientId)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="spotify-client">
+        <span>{t("profileName")}</span>
+        <input
+          type="text"
+          value={profileName}
+          autoComplete="off"
+          placeholder={t("profileNamePlaceholder")}
+          onChange={(e) => onProfileName(e.target.value)}
+        />
+      </label>
+      <label className="spotify-client">
+        <span>{t("clientId")}</span>
+        <input
+          type="text"
+          value={clientId}
+          autoComplete="off"
+          spellCheck={false}
+          placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          onChange={(e) => onClientId(e.target.value)}
+        />
+      </label>
+      <div className="spotify-profile-actions">
+        <button
+          type="button"
+          className="btn-ghost"
+          onClick={onSaveProfile}
+          disabled={!isValidSpotifyClientId(clientId)}
+          title={t("saveProfileTitle")}
+        >
+          {t("saveProfile")}
+        </button>
+        <button
+          type="button"
+          className="btn-ghost"
+          onClick={onDeleteProfile}
+          disabled={!activeProfileId}
+          title={t("deleteProfileTitle")}
+        >
+          {t("deleteProfile")}
+        </button>
+      </div>
     </div>
   );
 }

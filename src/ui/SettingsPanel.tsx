@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { dbGetPath, dbRevealPath, isTauri } from "../db";
+import { OrbitField } from "./fx";
 import { playNotify, unlockAudio } from "./sounds";
 import {
   DEFAULT_PREFS,
@@ -155,69 +156,82 @@ function SettingsSheetBody({
       </section>
 
       <section className="settings-block">
-        <h3>{t("visualEffects")}</h3>
-        <Toggle
-          label={t("cursor")}
-          hint={t("cursorHint")}
-          checked={prefs.cursor}
-          onChange={(cursor) => patch({ cursor })}
-        />
-        <Toggle
-          label={t("particles")}
-          hint={t("particlesHint")}
-          checked={prefs.particles}
-          onChange={(particles) => patch({ particles })}
-        />
-        <Toggle
-          label={t("frames")}
-          hint={t("framesHint")}
-          checked={prefs.frames}
-          onChange={(frames) => patch({ frames })}
-        />
-        <Toggle
-          label={t("shine")}
-          hint={t("shineHint")}
-          checked={prefs.shine}
-          onChange={(shine) => patch({ shine })}
-        />
-        <Toggle
-          label={t("background")}
-          hint={t("backgroundHint")}
-          checked={prefs.background}
-          onChange={(background) => patch({ background })}
-        />
-        <Toggle
-          label={t("rail")}
-          hint={t("railHint")}
-          checked={prefs.rail}
-          onChange={(rail) => patch({ rail })}
-        />
-        <Toggle
-          label={t("scramble")}
-          hint={t("scrambleHint")}
-          checked={prefs.scramble}
-          onChange={(scramble) => patch({ scramble })}
-        />
-        <Toggle
-          label={t("playful")}
-          hint={t("playfulHint")}
-          checked={prefs.playful}
-          onChange={(playful) => patch({ playful })}
-        />
-        <label className="settings-slider">
-          <span>
-            {t("intensity")}
-            <em>{Math.round(prefs.intensity * 100)}%</em>
-          </span>
-          <input
-            type="range"
-            min={0.35}
-            max={1.4}
-            step={0.05}
-            value={prefs.intensity}
-            onChange={(e) => patch({ intensity: Number(e.target.value) })}
+        <details className="settings-advanced" open={false}>
+          <summary>{t("visualEffects")}</summary>
+          <p className="settings-advanced-hint">{t("visualEffectsHint")}</p>
+          <Toggle
+            label={t("cursor")}
+            hint={t("cursorHint")}
+            checked={prefs.cursor}
+            onChange={(cursor) => patch({ cursor })}
           />
-        </label>
+          <Toggle
+            label={t("particles")}
+            hint={t("particlesHint")}
+            checked={prefs.particles}
+            onChange={(particles) => patch({ particles })}
+          />
+          <Toggle
+            label={t("frames")}
+            hint={t("framesHint")}
+            checked={prefs.frames}
+            onChange={(frames) => patch({ frames })}
+          />
+          <Toggle
+            label={t("shine")}
+            hint={t("shineHint")}
+            checked={prefs.shine}
+            onChange={(shine) => patch({ shine })}
+          />
+          <Toggle
+            label={t("background")}
+            hint={t("backgroundHint")}
+            checked={prefs.background}
+            onChange={(background) => patch({ background })}
+          />
+          <Toggle
+            label={t("rail")}
+            hint={t("railHint")}
+            checked={prefs.rail}
+            onChange={(rail) => patch({ rail })}
+          />
+          <Toggle
+            label={t("scramble")}
+            hint={t("scrambleHint")}
+            checked={prefs.scramble}
+            onChange={(scramble) => patch({ scramble })}
+          />
+          <Toggle
+            label={t("playful")}
+            hint={t("playfulHint")}
+            checked={prefs.playful}
+            onChange={(playful) => patch({ playful })}
+          />
+          <label className="settings-slider">
+            <span>
+              {t("intensity")}
+              <em>{Math.round(prefs.intensity * 100)}%</em>
+            </span>
+            <input
+              type="range"
+              min={0.35}
+              max={1.4}
+              step={0.05}
+              value={prefs.intensity}
+              onChange={(e) => patch({ intensity: Number(e.target.value) })}
+            />
+          </label>
+          {prefs.playful && (
+            <div className="settings-orbital">
+              <h4>{t("orbitalTitle")}</h4>
+              <p>{t("orbitalHelp")}</p>
+              <OrbitField
+                labels={["YOU", "TAGS", "LIKES", "MP3", "GENRE", "SYNC", "BASS", "ORDER"]}
+                height={160}
+              />
+            </div>
+          )}
+        </details>
       </section>
 
       <section className="settings-block">

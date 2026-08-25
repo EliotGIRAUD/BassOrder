@@ -1,9 +1,9 @@
 {
   "eyebrow": "Knowledge module",
   "title": "Artist dictionary",
-  "lede": "Dictionary of the active Spotify profile{{name}}. Each profile has its own memory — switch accounts to explore another taste.",
-  "profileSr": "Spotify profile",
-  "profileSwitchTitle": "Switch profile = switch dictionary",
+  "lede": "Explore artists and genres learned via Spotify{{name}}. To import or enrich, use the Spotify module.",
+  "profileSr": "Spotify account",
+  "profileSwitchTitle": "Switch account = switch dictionary",
   "hideGuide": "Hide guide",
   "showGuide": "How it works",
   "refresh": "Refresh",

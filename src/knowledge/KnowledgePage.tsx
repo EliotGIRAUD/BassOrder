@@ -18,6 +18,10 @@ import {
   notifyProfilesChanged,
   subscribeProfilesChange,
 } from "../spotify/profileEvents";
+import {
+  subscribeOpenArtist,
+  subscribeOpenGenre,
+} from "../search/searchEvents";
 import { TipPanel } from "../ui/AppTip";
 import { useExperience } from "../ui/Experience";
 
@@ -60,7 +64,15 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
   const [selection, setSelection] = useState<GenreSelection>({ kind: "all" });
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const [guideOpen, setGuideOpen] = useState(true);
+  const [pendingArtist, setPendingArtist] = useState<string | null>(null);
+  const [pendingGenre, setPendingGenre] = useState<string | null>(null);
+  const [guideOpen, setGuideOpen] = useState(() => {
+    try {
+      return localStorage.getItem("bassorder.knowledgeGuide.v1") !== "1";
+    } catch {
+      return false;
+    }
+  });
   const [treeBooted, setTreeBooted] = useState(false);
   const [listLimit, setListLimit] = useState(120);
   const [profiles, setProfiles] = useState<SpotifyProfile[]>(listProfiles);
@@ -116,6 +128,26 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
     });
   }, []);
 
+  useEffect(() => {
+    const offArtist = subscribeOpenArtist((name) => {
+      setPendingArtist(name);
+      setPendingGenre(null);
+      setQuery(name);
+      setSelection({ kind: "all" });
+      setGuideOpen(false);
+    });
+    const offGenre = subscribeOpenGenre((label) => {
+      setPendingGenre(label);
+      setPendingArtist(null);
+      setQuery("");
+      setGuideOpen(false);
+    });
+    return () => {
+      offArtist();
+      offGenre();
+    };
+  }, []);
+
   async function onSwitchProfile(id: string) {
     const profile = selectProfile(id);
     if (!profile) {
@@ -142,6 +174,30 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
   }, [data]);
 
   const tree = useMemo(() => buildGenreTree(artists, loc), [artists, loc]);
+
+  useEffect(() => {
+    if (!pendingArtist || artists.length === 0) {
+      return;
+    }
+    const needle = pendingArtist.trim().toLowerCase();
+    const row = artists.find((item) => item.artist.name.toLowerCase() === needle);
+    if (row) {
+      setSelectedKey(row.key);
+      setPendingArtist(null);
+    }
+  }, [pendingArtist, artists]);
+
+  useEffect(() => {
+    if (!pendingGenre || tree.length === 0) {
+      return;
+    }
+    const next = selectionFromGenreLabel(pendingGenre, tree);
+    setSelection(next);
+    if (next.kind === "parent" || next.kind === "sub") {
+      setExpanded((prev) => new Set(prev).add(next.parent));
+    }
+    setPendingGenre(null);
+  }, [pendingGenre, tree]);
 
   useEffect(() => {
     if (treeBooted || tree.length === 0) {
@@ -329,7 +385,19 @@ export function KnowledgePage({ onOpenSpotify }: { onOpenSpotify?: () => void })
           <button
             type="button"
             className="btn-ghost"
-            onClick={() => setGuideOpen((v) => !v)}
+            onClick={() => {
+              setGuideOpen((v) => {
+                const next = !v;
+                if (!next) {
+                  try {
+                    localStorage.setItem("bassorder.knowledgeGuide.v1", "1");
+                  } catch {
+                    /* ignore */
+                  }
+                }
+                return next;
+              });
+            }}
           >
             {guideOpen ? t("hideGuide") : t("showGuide")}
           </button>
@@ -1026,6 +1094,46 @@ function selectionTitle(
     return t("generalSub", { sub: selection.parent });
   }
   return `${selection.parent} · ${selection.sub}`;
+}
+
+function splitGenreLabel(label: string): { parent: string; sub: string | null } {
+  const trimmed = label.trim();
+  for (const sep of [" · ", " - ", " / "]) {
+    const at = trimmed.indexOf(sep);
+    if (at > 0) {
+      return {
+        parent: trimmed.slice(0, at).trim(),
+        sub: trimmed.slice(at + sep.length).trim() || null,
+      };
+    }
+  }
+  return { parent: trimmed, sub: null };
+}
+
+function selectionFromGenreLabel(
+  label: string,
+  tree: ParentNode[],
+): GenreSelection {
+  const { parent, sub } = splitGenreLabel(label);
+  const node =
+    tree.find((item) => item.parent.toLowerCase() === parent.toLowerCase()) ??
+    tree.find((item) =>
+      item.subs.some((entry) => entry.sub.toLowerCase() === parent.toLowerCase()),
+    );
+  if (!node) {
+    return { kind: "all" };
+  }
+  if (sub) {
+    const hit = node.subs.find(
+      (entry) =>
+        entry.sub.toLowerCase() === sub.toLowerCase() ||
+        `${node.parent} · ${entry.sub}`.toLowerCase() === label.trim().toLowerCase(),
+    );
+    if (hit) {
+      return { kind: "sub", parent: node.parent, sub: hit.sub };
+    }
+  }
+  return { kind: "parent", parent: node.parent };
 }
 
 function locationHint(

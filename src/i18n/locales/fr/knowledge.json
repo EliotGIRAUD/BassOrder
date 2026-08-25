@@ -1,9 +1,9 @@
 {
   "eyebrow": "Module Savoir",
   "title": "Dictionnaire d’artistes",
-  "lede": "Dictionnaire du profil Spotify actif{{name}}. Chaque profil a sa propre mémoire — change de compte pour explorer un autre goût.",
-  "profileSr": "Profil Spotify",
-  "profileSwitchTitle": "Changer de profil = changer de dictionnaire",
+  "lede": "Explore les artistes et genres appris via Spotify{{name}}. Pour importer ou enrichir, passe par le module Spotify.",
+  "profileSr": "Compte Spotify",
+  "profileSwitchTitle": "Changer de compte = changer de dictionnaire",
   "hideGuide": "Masquer le guide",
   "showGuide": "Comment ça marche",
   "refresh": "Rafraîchir",

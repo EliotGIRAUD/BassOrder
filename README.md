@@ -31,6 +31,8 @@ pnpm install
 pnpm tauri dev
 ```
 
+Copy `.env.example` to `.env` and paste the BassOrder Spotify **Client ID** (`VITE_SPOTIFY_CLIENT_ID`) so the app can show a single **Connect to Spotify** button. Redirect URIs on the Spotify dashboard: `http://127.0.0.1:41821/callback` and `http://127.0.0.1:41822/callback`.
+
 UI only (browser, no Tauri SQLite):
 
 ```bash

@@ -1,6 +1,6 @@
 [package]
 name = "bassorder"
-version = "0.1.5"
+version = "0.1.6"
 description = "BassOrder — from trash playlists to genre mastery"
 authors = ["Eliot"]
 edition = "2021"
@@ -38,4 +38,6 @@ password-hash = "0.5"
 dunce = "1"
 aes-gcm = "0.10"
 keyring = "3"
+tauri-plugin-updater = { version = "2.10.1", features = ["zip"] }
+tauri-plugin-process = "2.3.1"
 

@@ -34,7 +34,6 @@ import { ScrambleText } from "../ui/motion";
 import { HistoryListSkeleton } from "../ui/skeleton";
 import { usePaintSkeleton } from "../ui/usePaintSkeleton";
 import { TipPanel } from "../ui/AppTip";
-import { DetectionTimeline } from "../local/DetectionTimeline";
 
 type Props = {
   kind: "local" | "spotify";
@@ -205,6 +204,8 @@ function SpotifyHistoryPage({ onOpenSpotify }: { onOpenSpotify: () => void }) {
 
   const profiles = listProfiles();
   const visible = filterId ? items.filter((item) => item.profileId === filterId) : items;
+  const activeItem = visible.find((item) => item.id === activeId) ?? visible[0] ?? null;
+  const olderItems = visible.filter((item) => item.id !== activeItem?.id);
 
   function refresh() {
     setItems(listImports());
@@ -333,19 +334,41 @@ function SpotifyHistoryPage({ onOpenSpotify }: { onOpenSpotify: () => void }) {
           )}
         </div>
       ) : (
-        <ul className="history-page-list">
-          {visible.map((item, index) => (
-            <SpotifyImportCard
-              key={item.id}
-              item={item}
-              active={item.id === activeId}
-              index={index}
-              loc={loc}
-              onOpen={() => openItem(item)}
-              onForget={() => forgetItem(item.id)}
-            />
-          ))}
-        </ul>
+        <div className="history-spotify-layout">
+          {activeItem && (
+            <ul className="history-page-list">
+              <SpotifyImportCard
+                key={activeItem.id}
+                item={activeItem}
+                active
+                index={0}
+                loc={loc}
+                onOpen={() => openItem(activeItem)}
+                onForget={() => forgetItem(activeItem.id)}
+              />
+            </ul>
+          )}
+          {olderItems.length > 0 && (
+            <details className="history-older">
+              <summary>
+                {t("olderImports", { count: olderItems.length })}
+              </summary>
+              <ul className="history-page-list">
+                {olderItems.map((item, index) => (
+                  <SpotifyImportCard
+                    key={item.id}
+                    item={item}
+                    active={false}
+                    index={index}
+                    loc={loc}
+                    onOpen={() => openItem(item)}
+                    onForget={() => forgetItem(item.id)}
+                  />
+                ))}
+              </ul>
+            </details>
+          )}
+        </div>
       )}
     </section>
   );
@@ -423,7 +446,7 @@ function SpotifyImportCard({
           midAt={35}
         />
 
-        <dl className="history-stats">
+        <dl className="history-stats history-stats--compact">
           <div>
             <dt>{t("statLikes")}</dt>
             <dd>{item.likedCount}</dd>
@@ -436,28 +459,19 @@ function SpotifyImportCard({
             <dt>{t("statClassified")}</dt>
             <dd>{item.classifiedArtists}</dd>
           </div>
-          <div>
-            <dt>{t("statGenres")}</dt>
-            <dd>{item.groupCount}</dd>
-          </div>
-          <div>
-            <dt>{t("statProfile")}</dt>
-            <dd className="history-stat-text">{item.profileName}</dd>
-          </div>
-          <div>
-            <dt>{t("statAccount")}</dt>
-            <dd className="history-stat-text">{item.displayName ?? "—"}</dd>
-          </div>
         </dl>
 
         {topGenres.length > 0 && (
           <ul className="history-tags">
-            {topGenres.map((group) => (
+            {topGenres.slice(0, 3).map((group) => (
               <li key={group.folder}>
                 {group.genre}
                 <span>{group.likes}</span>
               </li>
             ))}
+            {topGenres.length > 3 && (
+              <li className="is-more">+{topGenres.length - 3}</li>
+            )}
           </ul>
         )}
 
@@ -503,7 +517,6 @@ function HistoryCard({
   const { t: tc } = useTranslation("common");
   const percent = Math.min(100, Math.max(0, lib.sortedPercent));
   const genres = lib.topGenres;
-  const duration = lib.durationSecs;
   const folders = lib.folderCount;
 
   function onCardClick(event: MouseEvent<HTMLElement>) {
@@ -550,60 +563,38 @@ function HistoryCard({
           midAt={40}
         />
 
-        {lib.detectionLog && lib.detectionLog.length > 0 && (
-          <DetectionTimeline events={lib.detectionLog} collapsible={false} />
-        )}
-
-        <dl className="history-stats">
+        <dl className="history-stats history-stats--compact">
           <div>
             <dt>{t("statTracks")}</dt>
             <dd>{lib.fileCount}</dd>
-          </div>
-          <div>
-            <dt>{t("statGenres")}</dt>
-            <dd>{folders}</dd>
           </div>
           <div>
             <dt>{t("statToSort")}</dt>
             <dd>{lib.unknownCount}</dd>
           </div>
           <div>
-            <dt>{t("statEnriched")}</dt>
-            <dd>{lib.lookedUpCount}</dd>
-          </div>
-          <div>
-            <dt>{t("statUnreadable")}</dt>
-            <dd>{lib.unreadCount}</dd>
-          </div>
-          <div>
-            <dt>{t("statDuration")}</dt>
-            <dd>{formatDuration(duration)}</dd>
+            <dt>{t("statGenres")}</dt>
+            <dd>{folders}</dd>
           </div>
         </dl>
 
         {genres.length > 0 && (
           <div className="history-tags-block">
-            <p className="history-tags-label">{t("topGenres")}</p>
             <ul className="history-tags">
-              {genres.slice(0, 8).map((group) => (
+              {genres.slice(0, 3).map((group) => (
                 <li key={group.folder} title={`${group.genre} · ${group.count}`}>
                   <span className="history-tag-name">{group.genre}</span>
                   <span className="history-tag-count">{group.count}</span>
                 </li>
               ))}
-              {genres.length > 8 && (
-                <li className="is-more">+{genres.length - 8}</li>
+              {genres.length > 3 && (
+                <li className="is-more">+{genres.length - 3}</li>
               )}
             </ul>
           </div>
         )}
 
         <footer className="history-card-actions">
-          {lib.selectedFolder && (
-            <p className="history-card-folder">
-              {t("openedFolder")} <span>{lib.selectedFolder}</span>
-            </p>
-          )}
           <button type="button" className="btn-primary" onClick={onOpen}>
             {t("reopenAnalysis")}
             <TipPanel side="bottom">{t("reopenTip")}</TipPanel>
@@ -635,18 +626,6 @@ function TrashIcon() {
       />
     </svg>
   );
-}
-
-function formatDuration(secs: number): string {
-  if (secs < 1) {
-    return "—";
-  }
-  const hours = Math.floor(secs / 3600);
-  const minutes = Math.floor((secs % 3600) / 60);
-  if (hours > 0) {
-    return `${hours} h ${minutes} min`;
-  }
-  return `${Math.max(1, minutes)} min`;
 }
 
 function shortPath(path: string): string {

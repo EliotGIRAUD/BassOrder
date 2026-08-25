@@ -1,27 +1,42 @@
-import { startTransition, useCallback, useState, type ReactNode } from "react";
+import {
+  startTransition,
+  useCallback,
+  useLayoutEffect,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { useTranslation } from "react-i18next";
 import "./App.css";
 import { HistoryPage } from "./history/HistoryPage";
 import { KnowledgePage } from "./knowledge/KnowledgePage";
 import { LocalModule } from "./local/LocalModule";
+import { subscribeHistoryChange } from "./local/historyEvents";
 import { listLibraries } from "./local/libraryCache";
+import { resolveUnlockView } from "./onboarding/firstRun";
 import { listImports } from "./spotify/importCache";
+import {
+  subscribeImportsChange,
+  subscribeProfilesChange,
+} from "./spotify/profileEvents";
 import { listProfiles } from "./spotify/profiles";
 import { RailProfileStack } from "./spotify/RailProfileStack";
 import { SpotifyModule } from "./spotify/SpotifyModule";
 import { PushEq } from "./ui/push";
 import { BackgroundJobs } from "./ui/BackgroundJobs";
 import { useExperience } from "./ui/Experience";
-import { GlobalSearch, useGlobalSearchHotkey } from "./ui/GlobalSearch";
 import { SettingsPanel } from "./ui/SettingsPanel";
+import { SearchPage, useGlobalSearchHotkey } from "./search/SearchPage";
+import { requestFocusSearch } from "./search/searchEvents";
 import { HomePageSkeleton } from "./ui/skeleton";
 import { usePaintSkeleton } from "./ui/usePaintSkeleton";
 import { listWorkJobs } from "./ui/workStatus";
 import { TiltCard, TypeLine } from "./ui/motion";
 import { TipPanel } from "./ui/AppTip";
+import { isFxMuted, usePrefs } from "./ui/prefs";
+import { RailUpdateButton } from "./ui/RailUpdate";
 import { LiveAvatar } from "./users/LiveAvatar";
-import { ProfilePage } from "./users/ProfilePage";
-import { AccountPage } from "./account/AccountPage";
+import { SpacePage } from "./users/SpacePage";
 import { UserGate } from "./users/UserGate";
 import { useUserSession } from "./users/UserSession";
 
@@ -32,23 +47,42 @@ type View =
   | "local"
   | "localHistory"
   | "knowledge"
-  | "profile"
-  | "account";
+  | "space"
+  | "search";
 
 function App() {
   const { t } = useTranslation("nav");
-  const { t: tc } = useTranslation("common");
   const [view, setView] = useState<View>("home");
   /** Garde Local/Spotify montés après 1re visite (jobs longs en fond). */
   const [keepLocal, setKeepLocal] = useState(false);
   const [keepSpotify, setKeepSpotify] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [waking, setWaking] = useState(false);
   const [railNudge, setRailNudge] = useState(0);
   const fx = useExperience();
   const { user, leave } = useUserSession();
   const locked = !user;
+  const localHistCount = useSyncExternalStore(
+    subscribeHistoryChange,
+    () => listLibraries().length,
+    () => 0,
+  );
+  const spotifyHistCount = useSyncExternalStore(
+    subscribeImportsChange,
+    () => listImports().length,
+    () => 0,
+  );
+
+  useLayoutEffect(() => {
+    if (!user) {
+      return;
+    }
+    const next = resolveUnlockView(user.id);
+    setView(next);
+    if (next === "local") {
+      setKeepLocal(true);
+    }
+  }, [user?.id]);
 
   // Activation Spotify faite dans UserSession.enter (après hydrate DB).
 
@@ -57,8 +91,12 @@ function App() {
       setRailNudge((n) => n + 1);
       return;
     }
-    setSearchOpen(true);
-  }, [user]);
+    if (view === "search") {
+      requestFocusSearch();
+      return;
+    }
+    go("search");
+  }, [user, view]);
   useGlobalSearchHotkey(openSearch);
 
   function go(next: View) {
@@ -154,11 +192,17 @@ function App() {
           title: t("toastKnowledgeTitle"),
           body: t("toastKnowledgeBody"),
         });
-      } else if (next === "profile") {
+      } else if (next === "space") {
         fx.toast({
           kind: "hint",
-          title: t("toastProfileTitle"),
-          body: t("toastProfileBody"),
+          title: t("toastSpaceTitle"),
+          body: t("toastSpaceBody"),
+        });
+      } else if (next === "search") {
+        fx.toast({
+          kind: "go",
+          title: t("toastSearchTitle"),
+          body: t("toastSearchBody"),
         });
       } else {
         fx.toast({
@@ -235,15 +279,17 @@ function App() {
             >
               <FolderIcon />
             </RailBtn>
-            <RailBtn
-              active={!locked && view === "localHistory"}
-              label={t("localHistory")}
-              hint={t("localHistoryHint")}
-              onClick={() => go("localHistory")}
-              sub
-            >
-              <ClockIcon />
-            </RailBtn>
+            {localHistCount > 0 && (
+              <RailBtn
+                active={!locked && view === "localHistory"}
+                label={t("localHistory")}
+                hint={t("localHistoryHint")}
+                onClick={() => go("localHistory")}
+                sub
+              >
+                <ClockIcon />
+              </RailBtn>
+            )}
           </div>
           <div className="rail-group">
             <RailBtn
@@ -255,15 +301,17 @@ function App() {
               <SpotifyIcon />
             </RailBtn>
             {!locked && <RailProfileStack onOpenSpotify={() => go("spotify")} />}
-            <RailBtn
-              active={!locked && view === "spotifyHistory"}
-              label={t("spotifyHistory")}
-              hint={t("spotifyHistoryHint")}
-              onClick={() => go("spotifyHistory")}
-              sub
-            >
-              <ClockIcon />
-            </RailBtn>
+            {spotifyHistCount > 0 && (
+              <RailBtn
+                active={!locked && view === "spotifyHistory"}
+                label={t("spotifyHistory")}
+                hint={t("spotifyHistoryHint")}
+                onClick={() => go("spotifyHistory")}
+                sub
+              >
+                <ClockIcon />
+              </RailBtn>
+            )}
           </div>
         </nav>
 
@@ -273,9 +321,9 @@ function App() {
           {user ? (
             <button
               type="button"
-              className={`rail-btn rail-user${view === "profile" ? " is-active" : ""}`}
-              onClick={() => go("profile")}
-              aria-label={t("profileAria", { name: user.name })}
+              className={`rail-btn rail-user${view === "space" ? " is-active" : ""}`}
+              onClick={() => go("space")}
+              aria-label={t("spaceAria", { name: user.name })}
             >
               <LiveAvatar
                 name={user.name}
@@ -284,21 +332,22 @@ function App() {
                 imageUrl={user.avatarUrl}
                 className="rail-user-avatar"
               />
-              <span className="rail-btn-label">{user.name}</span>
-              <TipPanel>{t("profileTip", { name: user.name })}</TipPanel>
+              <span className="rail-btn-label">{t("space")}</span>
+              <TipPanel>{t("spaceTip", { name: user.name })}</TipPanel>
             </button>
           ) : (
             <div className="rail-btn rail-user is-ghost" aria-hidden>
               <span className="rail-user-avatar is-empty">?</span>
-              <span className="rail-btn-label">{tc("profile")}</span>
+              <span className="rail-btn-label">{t("space")}</span>
             </div>
           )}
 
           <button
             type="button"
-            className="rail-btn"
+            className={`rail-btn${view === "search" ? " is-active" : ""}`}
             onClick={openSearch}
             aria-label={t("searchAria")}
+            aria-current={view === "search" ? "page" : undefined}
             tabIndex={locked ? -1 : 0}
           >
             <SearchIcon />
@@ -315,14 +364,7 @@ function App() {
             <KnowledgeIcon />
           </RailBtn>
 
-          <RailBtn
-            active={!locked && view === "account"}
-            label={t("account")}
-            hint={t("accountHint")}
-            onClick={() => go("account")}
-          >
-            <AccountIcon />
-          </RailBtn>
+          <RailUpdateButton locked={locked} />
 
           <button
             type="button"
@@ -363,28 +405,35 @@ function App() {
                   </h1>
                   <p className="home-lead">{t("homeLeadGate")}</p>
                 </header>
-                <section className="modules">
-                  <div className="module-card is-ghost" data-module="spotify">
-                    <h2>{t("cardSpotifyTitle")}</h2>
-                    <p>{t("cardSpotifyGhost")}</p>
-                  </div>
-                  <div className="module-card is-ghost" data-module="local">
+                <section className="modules is-guided">
+                  <div className="module-card is-ghost is-featured" data-module="local">
                     <h2>{t("cardLocalGhostTitle")}</h2>
                     <p>{t("cardLocalGhost")}</p>
+                  </div>
+                  <div className="module-card is-ghost is-secondary" data-module="spotify">
+                    <h2>{t("cardSpotifyTitle")}</h2>
+                    <p>{t("cardSpotifyGhost")}</p>
                   </div>
                 </section>
               </section>
             </div>
             <UserGate
               onUnlockStart={() => setWaking(true)}
-              onUnlocked={() => {
+              onUnlocked={(unlocked) => {
                 setWaking(false);
-                setView("home");
+                const next = resolveUnlockView(unlocked.id);
+                setView(next);
+                if (next === "local") {
+                  setKeepLocal(true);
+                }
                 fx.flash();
                 fx.toast({
                   kind: "ok",
                   title: t("toastUnlockedTitle"),
-                  body: t("toastUnlockedBody"),
+                  body:
+                    next === "local"
+                      ? t("toastUnlockedFirstBody")
+                      : t("toastUnlockedBody"),
                 });
               }}
             />
@@ -419,7 +468,10 @@ function App() {
                 hidden={view !== "local"}
                 inert={view !== "local"}
               >
-                <LocalModule active={view === "local"} />
+                <LocalModule
+                  active={view === "local"}
+                  onOpenSpotify={() => go("spotify")}
+                />
               </div>
             )}
 
@@ -435,9 +487,15 @@ function App() {
               </div>
             )}
 
-            {view === "profile" && (
+            {view === "search" && (
+              <div className="stage-local">
+                <SearchPage active={view === "search"} onNavigate={go} />
+              </div>
+            )}
+
+            {view === "space" && (
               <div className="stage-panel">
-                <ProfilePage
+                <SpacePage
                   onLeave={() => {
                     setView("home");
                     leave();
@@ -445,28 +503,12 @@ function App() {
                 />
               </div>
             )}
-
-            {view === "account" && (
-              <div className="stage-panel" style={{ ["--user-color" as string]: user?.color }}>
-                <AccountPage />
-              </div>
-            )}
           </>
         )}
       </main>
 
       {!locked && (
-        <>
-          <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
-          <GlobalSearch
-            open={searchOpen}
-            onClose={() => setSearchOpen(false)}
-            onNavigate={(next) => {
-              setSearchOpen(false);
-              go(next);
-            }}
-          />
-        </>
+        <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       )}
     </div>
   );
@@ -504,7 +546,32 @@ function RailBtn({
 
 function HomePanel({ onGo }: { onGo: (view: View) => void }) {
   const { t } = useTranslation("nav");
+  const { prefs } = usePrefs();
+  const muteFx = isFxMuted(prefs);
   const paintSkel = usePaintSkeleton(160);
+  const hasLocal =
+    useSyncExternalStore(
+      subscribeHistoryChange,
+      () => listLibraries().length,
+      () => 0,
+    ) > 0;
+  const hasSpotify =
+    useSyncExternalStore(
+      subscribeProfilesChange,
+      () => listProfiles().length,
+      () => 0,
+    ) > 0;
+  const primary: "local" | "spotify" = !hasLocal
+    ? "local"
+    : !hasSpotify
+      ? "spotify"
+      : "local";
+  const lead = !hasLocal
+    ? t("homeLeadEmpty")
+    : !hasSpotify
+      ? t("homeLeadSpotifyNext")
+      : t("homeLeadReady");
+
   if (paintSkel) {
     return (
       <section className="home">
@@ -512,71 +579,108 @@ function HomePanel({ onGo }: { onGo: (view: View) => void }) {
       </section>
     );
   }
+
+  const localCard = {
+    module: "local" as const,
+    title: t("cardLocalTitle"),
+    body: hasLocal ? t("cardLocalBodyResume") : t("cardLocalBody"),
+    cta: hasLocal ? t("cardLocalCtaResume") : t("cardLocalCta"),
+    view: "local" as const,
+    icon: <FolderIcon />,
+  };
+  const spotifyCard = {
+    module: "spotify" as const,
+    title: t("cardSpotifyTitle"),
+    body: hasLocal && !hasSpotify ? t("cardSpotifyBodyNext") : t("cardSpotifyBody"),
+    cta: hasLocal && !hasSpotify ? t("cardSpotifyCtaNext") : t("cardSpotifyCta"),
+    view: "spotify" as const,
+    icon: <SpotifyIcon />,
+  };
+  const featured = primary === "local" ? localCard : spotifyCard;
+  const secondary = primary === "local" ? spotifyCard : localCard;
+
   return (
     <section className="home">
       <div className="cyber-floor" aria-hidden>
         <span />
       </div>
-      <div className="ticker" aria-hidden>
-        <div className="ticker-track">
-          {Array.from({ length: 2 }, (_, i) => (
-            <span key={i}>{t("homeTicker")}</span>
-          ))}
+      {!muteFx && (
+        <div className="ticker" aria-hidden>
+          <div className="ticker-track">
+            {Array.from({ length: 2 }, (_, i) => (
+              <span key={i}>{t("homeTicker")}</span>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
       <header className="home-hero">
         <p className="eyebrow">{t("homeEyebrow")}</p>
         <h1 className="glitch-title" data-text="BassOrder">
           Bass<span>Order</span>
         </h1>
-        <TypeLine className="home-lead" text={t("homeLead")} />
-        <PushEq bars={24} active />
+        <TypeLine className="home-lead" text={lead} />
+        <PushEq bars={24} active hint={false} />
       </header>
 
-      <section className="modules" aria-label={t("modulesAria")}>
-        <TiltCard
-          type="button"
-          className="module-card"
-          data-module="spotify"
-          onClick={() => onGo("spotify")}
-        >
-          <span className="spin-border" aria-hidden />
-          <span className="aurora" aria-hidden />
-          <span className="module-spot" aria-hidden />
-          <span className="module-shine" aria-hidden />
-          <div className="module-icon">
-            <SpotifyIcon />
-          </div>
-          <h2>{t("cardSpotifyTitle")}</h2>
-          <p>{t("cardSpotifyBody")}</p>
-          <span className="module-cta">
-            {t("cardSpotifyCta")}
-            <ArrowIcon />
-          </span>
-        </TiltCard>
-
-        <TiltCard
-          type="button"
-          className="module-card"
-          data-module="local"
-          onClick={() => onGo("local")}
-        >
-          <span className="spin-border" aria-hidden />
-          <span className="aurora" aria-hidden />
-          <span className="module-spot" aria-hidden />
-          <span className="module-shine" aria-hidden />
-          <div className="module-icon">
-            <FolderIcon />
-          </div>
-          <h2>{t("cardLocalTitle")}</h2>
-          <p>{t("cardLocalBody")}</p>
-          <span className="module-cta">
-            {t("cardLocalCta")}
-            <ArrowIcon />
-          </span>
-        </TiltCard>
+      <section className="modules is-guided" aria-label={t("modulesAria")}>
+        <HomeModuleCard
+          featured
+          module={featured.module}
+          title={featured.title}
+          body={featured.body}
+          cta={featured.cta}
+          icon={featured.icon}
+          onClick={() => onGo(featured.view)}
+        />
+        <HomeModuleCard
+          module={secondary.module}
+          title={secondary.title}
+          body={secondary.body}
+          cta={secondary.cta}
+          icon={secondary.icon}
+          onClick={() => onGo(secondary.view)}
+        />
       </section>
     </section>
+  );
+}
+
+function HomeModuleCard({
+  featured = false,
+  module,
+  title,
+  body,
+  cta,
+  icon,
+  onClick,
+}: {
+  featured?: boolean;
+  module: "local" | "spotify";
+  title: string;
+  body: string;
+  cta: string;
+  icon: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <TiltCard
+      type="button"
+      className={`module-card${featured ? " is-featured" : " is-secondary"}`}
+      data-module={module}
+      onClick={onClick}
+    >
+      <span className="spin-border" aria-hidden />
+      <span className="aurora" aria-hidden />
+      <span className="module-spot" aria-hidden />
+      <span className="module-shine" aria-hidden />
+      <div className="module-icon">{icon}</div>
+      <h2>{title}</h2>
+      <p>{body}</p>
+      <span className="module-cta">
+        {cta}
+        <ArrowIcon />
+      </span>
+    </TiltCard>
   );
 }
 
@@ -663,27 +767,6 @@ function KnowledgeIcon() {
         d="M5 10.2c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6"
         stroke="currentColor"
         strokeWidth="1.6"
-      />
-    </svg>
-  );
-}
-
-function AccountIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="9" r="3.4" stroke="currentColor" strokeWidth="1.6" />
-      <path
-        d="M5.5 19.2c1.2-3 3.5-4.5 6.5-4.5s5.3 1.5 6.5 4.5"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-      <path
-        d="M17.2 6.2 19 8l2.6-3"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
       />
     </svg>
   );

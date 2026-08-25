@@ -48,6 +48,10 @@ import { LocalBootSkeleton } from "../ui/skeleton";
 import { TipPanel } from "../ui/AppTip";
 import { DetectionTimeline } from "./DetectionTimeline";
 import { useCollapsedPanel } from "./useCollapsedPanel";
+import { markFirstRunDone } from "../onboarding/firstRun";
+import { listProfiles } from "../spotify/profiles";
+import { subscribeProfilesChange } from "../spotify/profileEvents";
+import { useUserSession } from "../users/UserSession";
 import {
   allLibraryTracks,
   isLikelyTruncatedDuration,
@@ -144,11 +148,19 @@ function displayArtistName(name: string, t: LocalT): string {
 type SortKey = "count" | "name";
 type TrackSortKey = "title" | "artist" | "album" | "bpm" | "duration";
 
-export function LocalModule({ active = true }: { active?: boolean }) {
+export function LocalModule({
+  active = true,
+  onOpenSpotify,
+}: {
+  active?: boolean;
+  onOpenSpotify?: () => void;
+}) {
   const { t, i18n } = useTranslation("local");
   const loc = intlLocale((i18n.language.startsWith("fr") ? "fr" : "en") as AppLocale);
   const tauri = isTauri();
   const fx = useExperience();
+  const { user } = useUserSession();
+  const [hasSpotify, setHasSpotify] = useState(() => listProfiles().length > 0);
   const [restored] = useState(() => {
     const meta = getActiveLibrary();
     if (!meta) {
@@ -533,9 +545,10 @@ export function LocalModule({ active = true }: { active?: boolean }) {
       );
       setActiveId(getActiveLibrary()?.id ?? null);
       notifyHistoryChanged();
+      markFirstRunDone(user?.id);
     }, 450);
     return () => window.clearTimeout(timer);
-  }, [scan, selectedFolder, mode]);
+  }, [scan, selectedFolder, mode, user?.id]);
 
   useEffect(() => {
     const offOpen = subscribeOpenAnalysis((lib) => {
@@ -555,6 +568,13 @@ export function LocalModule({ active = true }: { active?: boolean }) {
       offChange();
     };
   }, [activeId]);
+
+  useEffect(() => {
+    setHasSpotify(listProfiles().length > 0);
+    return subscribeProfilesChange(() => {
+      setHasSpotify(listProfiles().length > 0);
+    });
+  }, []);
 
   function applySaved(lib: SavedLibrary | null, toast: boolean) {
     if (!lib) {
@@ -1036,6 +1056,14 @@ export function LocalModule({ active = true }: { active?: boolean }) {
             <li>{t("step2")}</li>
             <li>{t("step3")}</li>
           </ol>
+          <button
+            type="button"
+            className="btn-primary local-empty-cta"
+            onClick={() => void chooseFolder()}
+            disabled={busy !== null}
+          >
+            {t("chooseFolder")}
+          </button>
         </div>
       )}
 
@@ -1045,6 +1073,22 @@ export function LocalModule({ active = true }: { active?: boolean }) {
 
       {scan && busy !== "scan" && busy !== "lookup" && (
         <div className="local-workbench">
+          {onOpenSpotify && !hasSpotify && (
+            <div className="local-spotify-nudge fx-frame fx-frame--mid">
+              <span className="spin-border" aria-hidden />
+              <div className="local-spotify-nudge-copy">
+                <strong>{t("spotifyNudgeTitle")}</strong>
+                <p>{t("spotifyNudgeBody")}</p>
+              </div>
+              <button
+                type="button"
+                className="btn-accent"
+                onClick={onOpenSpotify}
+              >
+                {t("spotifyNudgeCta")}
+              </button>
+            </div>
+          )}
           <div className="local-workbench-chrome">
           <div className="kpi-grid" aria-label={t("kpiSummaryAria")}>
             <div
@@ -1364,70 +1408,108 @@ export function LocalModule({ active = true }: { active?: boolean }) {
               </p>
             </div>
             <div className="local-actions">
-              {scan.unknownCount > 0 && (
-                <>
-                  <button
-                    type="button"
-                    className="btn-accent"
-                    onClick={guessGenres}
-                    disabled={busy !== null}
-                  >
-                    {t("guessGenres")}
-                    <TipPanel side="bottom">{t("guessGenresTip")}</TipPanel>
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    onClick={() => {
-                      setTriageOpen(true);
-                      fx.toast({
-                        kind: "go",
-                        title: t("toastManualTitle"),
-                        body: t("toastManualBody"),
-                      });
-                    }}
-                    disabled={busy !== null}
-                  >
-                    {t("manualSort", { count: scan.unknownCount })}
-                    <TipPanel side="bottom">{t("manualSortTip")}</TipPanel>
-                  </button>
-                </>
+              {scan.unknownCount > 0 ? (
+                <button
+                  type="button"
+                  className="btn-accent btn-glow"
+                  onClick={guessGenres}
+                  disabled={busy !== null}
+                >
+                  {t("guessGenres")}
+                  <TipPanel side="bottom">{t("guessGenresTip")}</TipPanel>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn-primary btn-glow"
+                  onClick={() => {
+                    setOrganizeOpen(true);
+                    fx.toast({
+                      kind: "go",
+                      title: t("toastImportTitle"),
+                      body: t("toastImportBody"),
+                    });
+                  }}
+                  disabled={
+                    busy !== null ||
+                    allUnknown ||
+                    readyFolders === 0 ||
+                    importTracks.length === 0
+                  }
+                  title={
+                    readyFolders === 0
+                      ? t("importDisabledNoFolders")
+                      : importTracks.length === 0
+                        ? t("importDisabledAllExcluded")
+                        : t("importDisabledOk")
+                  }
+                >
+                  {busy === "organize"
+                    ? t("importSortWriting")
+                    : t("importSort", {
+                        folders: readyFolders,
+                        tracks: importTracks.length,
+                      })}
+                  <TipPanel side="bottom">{t("importSortTip")}</TipPanel>
+                </button>
               )}
-              <button
-                type="button"
-                className="btn-primary btn-glow"
-                onClick={() => {
-                  setOrganizeOpen(true);
-                  fx.toast({
-                    kind: "go",
-                    title: t("toastImportTitle"),
-                    body: t("toastImportBody"),
-                  });
-                }}
-                disabled={
-                  busy !== null ||
-                  allUnknown ||
-                  readyFolders === 0 ||
-                  importTracks.length === 0
-                }
-                title={
-                  readyFolders === 0
-                    ? t("importDisabledNoFolders")
-                    : importTracks.length === 0
-                      ? t("importDisabledAllExcluded")
-                      : t("importDisabledOk")
-                }
-              >
-                {busy === "organize"
-                  ? t("importSortWriting")
-                  : t("importSort", {
-                      folders: readyFolders,
-                      tracks: importTracks.length,
-                    })}
-                <TipPanel side="bottom">{t("importSortTip")}</TipPanel>
-              </button>
+              {scan.unknownCount > 0 && (
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => {
+                    setTriageOpen(true);
+                    fx.toast({
+                      kind: "go",
+                      title: t("toastManualTitle"),
+                      body: t("toastManualBody"),
+                    });
+                  }}
+                  disabled={busy !== null}
+                >
+                  {t("manualSort", { count: scan.unknownCount })}
+                  <TipPanel side="bottom">{t("manualSortTip")}</TipPanel>
+                </button>
+              )}
+              {scan.unknownCount > 0 && (
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => {
+                    setOrganizeOpen(true);
+                    fx.toast({
+                      kind: "go",
+                      title: t("toastImportTitle"),
+                      body: t("toastImportBody"),
+                    });
+                  }}
+                  disabled={
+                    busy !== null ||
+                    allUnknown ||
+                    readyFolders === 0 ||
+                    importTracks.length === 0
+                  }
+                  title={
+                    readyFolders === 0
+                      ? t("importDisabledNoFolders")
+                      : importTracks.length === 0
+                        ? t("importDisabledAllExcluded")
+                        : t("importDisabledOk")
+                  }
+                >
+                  {busy === "organize"
+                    ? t("importSortWriting")
+                    : t("importSort", {
+                        folders: readyFolders,
+                        tracks: importTracks.length,
+                      })}
+                  <TipPanel side="bottom">{t("importSortTip")}</TipPanel>
+                </button>
+              )}
             </div>
-            <p className="action-legend">{t("actionLegend")}</p>
+            <p className="action-legend">
+              {scan.unknownCount > 0 ? t("actionLegendGuessFirst") : t("actionLegend")}
+            </p>
           </div>
 
           {result && <ResultBanner result={result} />}
